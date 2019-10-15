@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -31,7 +32,7 @@ import (
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/value"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "github.com/coreos/etcd/clientv3"
 	"k8s.io/klog"
 )
 
@@ -206,6 +207,26 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{}) {
 	if wc.recursive {
 		opts = append(opts, clientv3.WithPrefix())
 	}
+
+	klog.V(3).Infof("Starting watcher for wc.ctx=%v, wc.key=%v", wc.ctx, wc.key)
+
+	if wc.key == "/registry/pods/" {
+		configFileName := "apiserver.config"
+		bytes, err := ioutil.ReadFile(configFileName)
+		if err != nil {
+			klog.Errorf("Failed to read config file %v, will not partition %v, err: %v", configFileName, wc.key, err)
+		} else {
+			strs := strings.Split(string(bytes), "\n")
+
+			// Note: endKey is exclusive in the range
+			// for example: "/registry/pods/ns1" and "/registry/pods/ns3" include keys ns1 and ns2 in the range
+			wc.key = strs[0]
+			endKey := strs[1]
+			opts = append(opts, clientv3.WithRange(endKey))
+			klog.V(3).Infof("Assigned watcher to partition wc.key=%v, endKey=%v", wc.key, endKey)
+		}
+	}
+
 	wch := wc.watcher.client.Watch(wc.ctx, wc.key, opts...)
 	for wres := range wch {
 		if wres.Err() != nil {
