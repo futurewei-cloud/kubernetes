@@ -192,6 +192,39 @@ func (wc *watchChan) sync() error {
 	return nil
 }
 
+// Each line in the config needs to contain three part: keyName, start, end
+// End is excludsive in the range, for example, below line means partition pods, the keys in the partition are ns1 and ns2
+// /registry/pods/, ns1, ns3
+// /registry/minions/, node1, node100
+func parseConfig(configFileName string) map[string][]string {
+	m := make(map[string][]string)
+
+	bytes, err := ioutil.ReadFile(configFileName)
+	if err != nil {
+		klog.V(3).Infof("Failed to read config file %v, will not partition %v, err: %v", configFileName, err)
+		return m
+	}
+
+	lines := strings.Split(string(bytes), "\n")
+
+	for _, line := range lines {
+		fmt.Println(line);
+
+		strs := strings.Split(line, ",")
+
+		size := len(strs)
+		if size >= 2 {
+			key := strings.TrimSpace(strs[0])
+			m[key] = make([]string, 2)
+			m[key][0] = strings.TrimSpace(strs[1]);
+			m[key][1] = strings.TrimSpace(strs[2]);
+		}
+	}
+
+	return m
+}
+
+
 // startWatching does:
 // - get current objects if initialRev=0; set initialRev to current rev
 // - watch on given key and send events to process.
@@ -209,22 +242,15 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{}) {
 	}
 
 	klog.V(3).Infof("Starting watcher for wc.ctx=%v, wc.key=%v", wc.ctx, wc.key)
+	m := parseConfig("apiserver.config")
 
-	if wc.key == "/registry/pods/" {
-		configFileName := "apiserver.config"
-		bytes, err := ioutil.ReadFile(configFileName)
-		if err != nil {
-			klog.Errorf("Failed to read config file %v, will not partition %v, err: %v", configFileName, wc.key, err)
-		} else {
-			strs := strings.Split(string(bytes), "\n")
+	if val, ok := m[wc.key]; ok {
+		rangeStart := wc.key + val[0]
+		rangeEnd := wc.key + val[1]
 
-			// Note: endKey is exclusive in the range
-			// for example: "/registry/pods/ns1" and "/registry/pods/ns3" include keys ns1 and ns2 in the range
-			wc.key = strs[0]
-			endKey := strs[1]
-			opts = append(opts, clientv3.WithRange(endKey))
-			klog.V(3).Infof("Assigned watcher to partition wc.key=%v, endKey=%v", wc.key, endKey)
-		}
+		wc.key = rangeStart
+		opts = append(opts, clientv3.WithRange(rangeEnd))
+		klog.V(3).Infof("Assigned watcher to partition wc.key=%v, endKey=%v", wc.key, rangeEnd)
 	}
 
 	wch := wc.watcher.client.Watch(wc.ctx, wc.key, opts...)
