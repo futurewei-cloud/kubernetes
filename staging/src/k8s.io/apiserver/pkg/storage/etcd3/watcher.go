@@ -201,15 +201,13 @@ func parseConfig(configFileName string) map[string][]string {
 
 	bytes, err := ioutil.ReadFile(configFileName)
 	if err != nil {
-		klog.V(3).Infof("Failed to read config file %v, will not partition %v, err: %v", configFileName, err)
+		klog.V(3).Infof("Failed to read config file %v, will not partition any object, err: %v", configFileName, err)
 		return m
 	}
 
 	lines := strings.Split(string(bytes), "\n")
 
 	for _, line := range lines {
-		fmt.Println(line);
-
 		strs := strings.Split(line, ",")
 
 		size := len(strs)
