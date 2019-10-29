@@ -214,14 +214,13 @@ func parseConfig(configFileName string) map[string][]string {
 		if size >= 2 {
 			key := strings.TrimSpace(strs[0])
 			m[key] = make([]string, 2)
-			m[key][0] = strings.TrimSpace(strs[1]);
-			m[key][1] = strings.TrimSpace(strs[2]);
+			m[key][0] = strings.TrimSpace(strs[1])
+			m[key][1] = strings.TrimSpace(strs[2])
 		}
 	}
 
 	return m
 }
-
 
 // startWatching does:
 // - get current objects if initialRev=0; set initialRev to current rev

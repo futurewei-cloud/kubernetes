@@ -259,6 +259,16 @@ func AddHandlers(h printers.PrintHandler) {
 	h.TableHandler(namespaceColumnDefinitions, printNamespace)
 	h.TableHandler(namespaceColumnDefinitions, printNamespaceList)
 
+	controllerInstanceColumnDefinitions := []metav1beta1.TableColumnDefinition{
+		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "ControllerType", Type: "string", Format: "name", Description: "The controller type of the controller instance."},
+		{Name: "ControllerKey", Type: "integer", Description: "The key of the controller instance."},
+		{Name: "WorkloadNum", Type: "integer", Description: "The number of workload instances assigned to this controller instance."},
+		{Name: "IsLocked", Type: "boolean", Description: "The controller is locked or not."},
+	}
+	h.TableHandler(controllerInstanceColumnDefinitions, printControllerInstance)
+	h.TableHandler(controllerInstanceColumnDefinitions, printControllerInstanceList)
+
 	secretColumnDefinitions := []metav1beta1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Type", Type: "string", Description: apiv1.Secret{}.SwaggerDoc()["type"]},
@@ -1202,6 +1212,30 @@ func printNamespaceList(list *api.NamespaceList, options printers.GenerateOption
 	rows := make([]metav1beta1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
 		r, err := printNamespace(&list.Items[i], options)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, r...)
+	}
+	return rows, nil
+}
+
+func printControllerInstance(obj *api.ControllerInstance, options printers.GenerateOptions) ([]metav1beta1.TableRow, error) {
+	row := metav1beta1.TableRow{
+		Object: runtime.RawExtension{Object: obj},
+	}
+	row.Cells = append(row.Cells, obj.Name)
+	row.Cells = append(row.Cells, obj.ControllerType)
+	row.Cells = append(row.Cells, obj.ControllerKey)
+	row.Cells = append(row.Cells, obj.WorkloadNum)
+	row.Cells = append(row.Cells, obj.IsLocked)
+	return []metav1beta1.TableRow{row}, nil
+}
+
+func printControllerInstanceList(list *api.ControllerInstanceList, options printers.GenerateOptions) ([]metav1beta1.TableRow, error) {
+	rows := make([]metav1beta1.TableRow, 0, len(list.Items))
+	for i := range list.Items {
+		r, err := printControllerInstance(&list.Items[i], options)
 		if err != nil {
 			return nil, err
 		}
