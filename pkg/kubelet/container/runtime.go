@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"net/url"
 	"reflect"
 	"strings"
@@ -568,6 +569,7 @@ func (p *Pod) FindSandboxByID(id ContainerID) *Container {
 func (p *Pod) ToAPIPod() *v1.Pod {
 	var pod v1.Pod
 	pod.UID = p.ID
+	pod.HashKey = fuzzer.GetHashOfUUID(p.ID)
 	pod.Name = p.Name
 	pod.Namespace = p.Namespace
 

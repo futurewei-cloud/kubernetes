@@ -18,6 +18,7 @@ package emptydir
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"os"
 	"path/filepath"
 
@@ -135,7 +136,7 @@ func (plugin *emptyDirPlugin) NewUnmounter(volName string, podUID types.UID) (vo
 
 func (plugin *emptyDirPlugin) newUnmounterInternal(volName string, podUID types.UID, mounter mount.Interface, mountDetector mountDetector) (volume.Unmounter, error) {
 	ed := &emptyDir{
-		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID}},
+		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID, HashKey: fuzzer.GetHashOfUUID(podUID)}},
 		volName:         volName,
 		medium:          v1.StorageMediumDefault, // might be changed later
 		mounter:         mounter,

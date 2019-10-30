@@ -136,6 +136,7 @@ func TestUnstructuredGetters(t *testing.T) {
 				"namespace":                  "test_namespace",
 				"generateName":               "test_generateName",
 				"uid":                        "test_uid",
+				"hashKey":                    int64(0),
 				"resourceVersion":            "test_resourceVersion",
 				"generation":                 ten,
 				"deletionGracePeriodSeconds": ten,
@@ -154,12 +155,14 @@ func TestUnstructuredGetters(t *testing.T) {
 						"name":       "poda",
 						"apiVersion": "v1",
 						"uid":        "1",
+						"hashKey":    int64(0),
 					},
 					map[string]interface{}{
 						"kind":       "Pod",
 						"name":       "podb",
 						"apiVersion": "v1",
 						"uid":        "2",
+						"hashKey":    int64(0),
 						// though these fields are of type *bool, but when
 						// decoded from JSON, they are unmarshalled as bool.
 						"controller":         true,
@@ -229,12 +232,14 @@ func TestUnstructuredGetters(t *testing.T) {
 			Name:       "poda",
 			APIVersion: "v1",
 			UID:        "1",
+			HashKey:    int64(0),
 		},
 		{
 			Kind:               "Pod",
 			Name:               "podb",
 			APIVersion:         "v1",
 			UID:                "2",
+			HashKey:            int64(0),
 			Controller:         &trueVar,
 			BlockOwnerDeletion: &trueVar,
 		},
@@ -270,6 +275,7 @@ func TestUnstructuredSetters(t *testing.T) {
 				"namespace":                  "test_namespace",
 				"generateName":               "test_generateName",
 				"uid":                        "test_uid",
+				"hashKey":                    int64(1),
 				"resourceVersion":            "test_resourceVersion",
 				"selfLink":                   "test_selfLink",
 				"creationTimestamp":          "2009-11-10T23:00:00Z",
@@ -288,12 +294,14 @@ func TestUnstructuredSetters(t *testing.T) {
 						"name":       "poda",
 						"apiVersion": "v1",
 						"uid":        "1",
+						"hashKey":    int64(1),
 					},
 					map[string]interface{}{
 						"kind":               "Pod",
 						"name":               "podb",
 						"apiVersion":         "v1",
 						"uid":                "2",
+						"hashKey":            int64(2),
 						"controller":         true,
 						"blockOwnerDeletion": true,
 					},
@@ -313,6 +321,7 @@ func TestUnstructuredSetters(t *testing.T) {
 	unstruct.SetName("test_name")
 	unstruct.SetGenerateName("test_generateName")
 	unstruct.SetUID(types.UID("test_uid"))
+	unstruct.SetHashKey(int64(1))
 	unstruct.SetResourceVersion("test_resourceVersion")
 	unstruct.SetSelfLink("test_selfLink")
 	unstruct.SetCreationTimestamp(metav1.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC))
@@ -326,12 +335,14 @@ func TestUnstructuredSetters(t *testing.T) {
 			Name:       "poda",
 			APIVersion: "v1",
 			UID:        "1",
+			HashKey:    int64(1),
 		},
 		{
 			Kind:               "Pod",
 			Name:               "podb",
 			APIVersion:         "v1",
 			UID:                "2",
+			HashKey:            int64(2),
 			Controller:         &trueVar,
 			BlockOwnerDeletion: &trueVar,
 		},
@@ -357,12 +368,14 @@ func TestOwnerReferences(t *testing.T) {
 			Kind:       "K2",
 			Name:       "n2",
 			UID:        types.UID("abc1"),
+			HashKey:    int64(0),
 		},
 		{
 			APIVersion:         "v1",
 			Kind:               "K1",
 			Name:               "n1",
 			UID:                types.UID("abc2"),
+			HashKey:            int64(0),
 			Controller:         &trueVar,
 			BlockOwnerDeletion: &falseVar,
 		},
@@ -371,6 +384,7 @@ func TestOwnerReferences(t *testing.T) {
 			Kind:               "K3",
 			Name:               "n3",
 			UID:                types.UID("abc3"),
+			HashKey:            int64(0),
 			Controller:         &falseVar,
 			BlockOwnerDeletion: &trueVar,
 		},
@@ -518,6 +532,7 @@ func TestAccessorMethods(t *testing.T) {
 		{accessor: "Name", val: "bar"},
 		{accessor: "GenerateName", val: "baz"},
 		{accessor: "UID", val: types.UID("uid")},
+		{accessor: "HashKey", val: int64(1)},
 		{accessor: "ResourceVersion", val: "1"},
 		{accessor: "Generation", val: int64(5)},
 		{accessor: "SelfLink", val: "/foo"},

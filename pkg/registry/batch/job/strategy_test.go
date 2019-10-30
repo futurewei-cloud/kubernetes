@@ -17,6 +17,7 @@ limitations under the License.
 package job
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"reflect"
 	"testing"
 
@@ -176,6 +177,7 @@ func TestJobStrategyWithGeneration(t *testing.T) {
 			Name:      "myjob2",
 			Namespace: metav1.NamespaceDefault,
 			UID:       theUID,
+			HashKey:   fuzzer.GetHashOfUUID(theUID),
 		},
 		Spec: batch.JobSpec{
 			Selector: nil,

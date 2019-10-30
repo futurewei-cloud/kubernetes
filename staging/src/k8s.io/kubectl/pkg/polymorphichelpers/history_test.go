@@ -74,7 +74,7 @@ func TestViewHistory(t *testing.T) {
 				Name:            "moons",
 				Namespace:       "default",
 				Labels:          map[string]string{"foo": "bar"},
-				OwnerReferences: []metav1.OwnerReference{{"apps/v1", "StatefulSet", "moons", "1993", &trueVar, nil}},
+				OwnerReferences: []metav1.OwnerReference{{"apps/v1", "StatefulSet", "moons", "1993", int64(1), &trueVar, nil}},
 			},
 			TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 			Revision: 1,

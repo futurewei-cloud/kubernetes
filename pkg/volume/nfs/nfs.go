@@ -18,6 +18,7 @@ package nfs
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"os"
 	"runtime"
 
@@ -146,7 +147,7 @@ func (plugin *nfsPlugin) newUnmounterInternal(volName string, podUID types.UID, 
 	return &nfsUnmounter{&nfs{
 		volName:         volName,
 		mounter:         mounter,
-		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID}},
+		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID, HashKey: fuzzer.GetHashOfUUID(podUID)}},
 		plugin:          plugin,
 		MetricsProvider: volume.NewMetricsStatFS(getPath(podUID, volName, plugin.host)),
 	}}, nil

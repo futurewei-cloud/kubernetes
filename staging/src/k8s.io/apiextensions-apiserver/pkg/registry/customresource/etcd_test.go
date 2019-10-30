@@ -389,6 +389,7 @@ func TestScaleGet(t *testing.T) {
 			Name:              cr.GetName(),
 			Namespace:         metav1.NamespaceDefault,
 			UID:               cr.GetUID(),
+			HashKey:           cr.GetHashKey(),
 			ResourceVersion:   cr.GetResourceVersion(),
 			CreationTimestamp: cr.GetCreationTimestamp(),
 		},

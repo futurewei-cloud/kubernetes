@@ -274,6 +274,7 @@ func TestScaleGet(t *testing.T) {
 			Name:              name,
 			Namespace:         namespace,
 			UID:               rc.UID,
+			HashKey:           rc.HashKey,
 			ResourceVersion:   rc.ResourceVersion,
 			CreationTimestamp: rc.CreationTimestamp,
 		},

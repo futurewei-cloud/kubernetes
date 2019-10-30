@@ -546,7 +546,7 @@ func (sched *Scheduler) bind(assumed *v1.Pod, targetNode string, state *framewor
 			// If binding succeeds then PodScheduled condition will be updated in apiserver so that
 			// it's atomic with setting host.
 			err = sched.GetBinder(assumed).Bind(&v1.Binding{
-				ObjectMeta: metav1.ObjectMeta{Namespace: assumed.Namespace, Name: assumed.Name, UID: assumed.UID},
+				ObjectMeta: metav1.ObjectMeta{Namespace: assumed.Namespace, Name: assumed.Name, UID: assumed.UID, HashKey: assumed.HashKey},
 				Target: v1.ObjectReference{
 					Kind: "Node",
 					Name: targetNode,

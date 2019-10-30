@@ -79,6 +79,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Selector:       validManualSelector,
@@ -91,6 +92,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Selector: validGeneratedSelector,
@@ -111,6 +113,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Parallelism: &negative,
@@ -123,6 +126,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Completions: &negative,
@@ -135,6 +139,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				ActiveDeadlineSeconds: &negative64,
@@ -147,6 +152,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Template: validPodTemplateSpecForGenerated,
@@ -157,6 +163,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Selector:       validManualSelector,
@@ -178,6 +185,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Selector:       validManualSelector,
@@ -199,6 +207,7 @@ func TestValidateJob(t *testing.T) {
 				Name:      "myjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.JobSpec{
 				Selector:       validManualSelector,
@@ -226,6 +235,7 @@ func TestValidateJob(t *testing.T) {
 					Name:      "myjob",
 					Namespace: metav1.NamespaceDefault,
 					UID:       types.UID("1a2b3c"),
+					HashKey:   int64(0),
 				},
 				Spec: batch.JobSpec{
 					TTLSecondsAfterFinished: &negative,
@@ -339,6 +349,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -355,6 +366,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "@hourly",
@@ -390,6 +402,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "error",
@@ -406,6 +419,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "",
@@ -422,6 +436,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:                "* * * * ?",
@@ -439,6 +454,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:                   "* * * * ?",
@@ -456,6 +472,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:               "* * * * ?",
@@ -473,6 +490,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule: "* * * * ?",
@@ -488,6 +506,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -505,6 +524,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -523,6 +543,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -540,6 +561,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -557,6 +579,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "10000000002000000000300000000040000000005000000000123",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -573,6 +596,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -590,6 +614,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",
@@ -614,6 +639,7 @@ func TestValidateCronJob(t *testing.T) {
 				Name:      "mycronjob",
 				Namespace: metav1.NamespaceDefault,
 				UID:       types.UID("1a2b3c"),
+				HashKey:   int64(0),
 			},
 			Spec: batch.CronJobSpec{
 				Schedule:          "* * * * ?",

@@ -43,6 +43,9 @@ func TestNewControllerRef(t *testing.T) {
 	if controllerRef.UID != obj1.UID {
 		t.Errorf("Incorrect UID: %s", controllerRef.UID)
 	}
+	if controllerRef.HashKey != obj1.HashKey {
+		t.Errorf("Incorrect HashKey: %d", controllerRef.HashKey)
+	}
 	if controllerRef.Controller == nil || *controllerRef.Controller != true {
 		t.Error("Controller must be set to true")
 	}
@@ -92,7 +95,7 @@ func TestGetControllerOf(t *testing.T) {
 		t.Error("GetControllerOf must return null")
 	}
 	c := GetControllerOf(obj2)
-	if c.Name != controllerRef.Name || c.UID != controllerRef.UID {
+	if c.Name != controllerRef.Name || c.UID != controllerRef.UID || c.HashKey != controllerRef.HashKey {
 		t.Errorf("Incorrect result of GetControllerOf: %v", c)
 	}
 }
@@ -124,7 +127,7 @@ func BenchmarkGetControllerOf(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		c := GetControllerOf(obj2)
-		if c.Name != controllerRef.Name || c.UID != controllerRef.UID {
+		if c.Name != controllerRef.Name || c.UID != controllerRef.UID || c.HashKey != controllerRef.HashKey {
 			b.Errorf("Incorrect result of GetControllerOf: %v", c)
 		}
 	}

@@ -290,6 +290,7 @@ func (s *csrSimulator) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		csr.UID = types.UID("1")
+		csr.HashKey = int64(0)
 		csr.ResourceVersion = "1"
 		data := mustMarshal(csr)
 		w.Header().Set("Content-Type", "application/json")

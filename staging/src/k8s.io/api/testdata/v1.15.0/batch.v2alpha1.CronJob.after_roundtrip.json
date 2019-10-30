@@ -23,6 +23,7 @@
         "kind": "12",
         "name": "13",
         "uid": "Dz廔ȇ{sŊƏp",
+        "hashkey": 0,
         "controller": false,
         "blockOwnerDeletion": true
       }
@@ -67,6 +68,7 @@
             "kind": "35",
             "name": "36",
             "uid": "+½H牗洝尿彀亞螩",
+            "hashkey": 0,
             "controller": false,
             "blockOwnerDeletion": true
           }
@@ -126,6 +128,7 @@
                 "kind": "62",
                 "name": "63",
                 "uid": "Ǡ/淹\\韲翁\u0026ʢ",
+                "hashkey": 0,
                 "controller": true,
                 "blockOwnerDeletion": true
               }
