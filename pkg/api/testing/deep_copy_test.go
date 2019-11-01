@@ -18,7 +18,7 @@ package testing
 
 import (
 	"io/ioutil"
-	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/apis/meta/fuzzer"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"testing"
 	"time"
 
