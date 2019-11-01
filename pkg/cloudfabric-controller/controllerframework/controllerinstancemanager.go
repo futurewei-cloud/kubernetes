@@ -33,8 +33,7 @@ import (
 	"k8s.io/klog"
 	"strconv"
 
-	//"k8s.io/kubernetes/pkg/cloudfabric-controller"
-	"k8s.io/kubernetes/pkg/util/metrics"
+	"k8s.io/component-base/metrics/prometheus/ratelimiter"
 	"sync"
 )
 
@@ -75,7 +74,7 @@ func NewControllerInstanceManager(coInformer coreinformers.ControllerInstanceInf
 	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 
 	if kubeClient != nil && kubeClient.CoreV1().RESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("job_controller", kubeClient.CoreV1().RESTClient().GetRateLimiter())
+		ratelimiter.RegisterMetricAndTrackRateLimiterUsage("job_controller", kubeClient.CoreV1().RESTClient().GetRateLimiter())
 	}
 
 	manager := &ControllerInstanceManager{
@@ -233,7 +232,7 @@ func (cim *ControllerInstanceManager) Run(stopCh <-chan struct{}) {
 	klog.Infof("Starting controller instance manager. CIM %v", cim.instanceId)
 	defer klog.Infof("Shutting down controller instance manager %v", cim.instanceId)
 
-	if !WaitForCacheSync("Controller Instance Manager", stopCh, cim.controllerListerSynced) {
+	if !cache.WaitForNamedCacheSync("Controller Instance Manager", stopCh, cim.controllerListerSynced) {
 		klog.Infof("Controller instances NOT synced %v. CIM %v", cim.controllerListerSynced, cim.instanceId)
 		return
 	}

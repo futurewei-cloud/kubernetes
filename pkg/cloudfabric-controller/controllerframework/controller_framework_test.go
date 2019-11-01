@@ -77,6 +77,8 @@ func TestGetControllerInstanceManager(t *testing.T) {
 	updateCh := make(chan string)
 	cim = NewControllerInstanceManager(informers.Core().V1().ControllerInstances(), client, updateCh)
 	assert.NotNil(t, cim)
+
+	checkInstanceHandler = mockCheckInstanceHander
 }
 
 func TestGenerateKey(t *testing.T) {

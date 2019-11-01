@@ -89,7 +89,6 @@ func newReplicaSet(replicas int, selectorMap map[string]string) *apps.ReplicaSet
 			UID:             uuid.NewUUID(),
 			Name:            "foobar",
 			Namespace:       metav1.NamespaceDefault,
-			Tenant:          metav1.TenantDefault,
 			ResourceVersion: "18",
 		},
 		Spec: apps.ReplicaSetSpec{
@@ -144,7 +143,6 @@ func newPod(name string, rs *apps.ReplicaSet, status v1.PodPhase, lastTransition
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       rs.Namespace,
-			Tenant:          rs.Tenant,
 			Labels:          rs.Spec.Selector.MatchLabels,
 			OwnerReferences: []metav1.OwnerReference{controllerReference},
 		},
@@ -1068,7 +1066,6 @@ func TestDeletionTimestamp(t *testing.T) {
 	isController := true
 	secondPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Tenant:    pod.Tenant,
 			Namespace: pod.Namespace,
 			Name:      "secondPod",
 			Labels:    pod.Labels,

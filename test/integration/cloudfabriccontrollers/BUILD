@@ -7,11 +7,11 @@ go_test(
         "main_test.go",
         "replicaset_test.go",
     ],
+    tags = ["integration"],
     deps = [
         "//pkg/api/v1/pod:go_default_library",
         "//pkg/cloudfabric-controller/controllerframework:go_default_library",
         "//pkg/cloudfabric-controller/replicaset:go_default_library",
-        "//pkg/util/slice:go_default_library",
         "//staging/src/k8s.io/api/apps/v1:go_default_library",
         "//staging/src/k8s.io/api/core/v1:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/api/errors:go_default_library",
