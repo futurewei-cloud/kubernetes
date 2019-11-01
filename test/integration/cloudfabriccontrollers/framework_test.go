@@ -42,6 +42,7 @@ func TestMultipleReplicaSetControllerLifeCycle(t *testing.T) {
 	assert.NotNil(t, rsControllerInstance1.Name, "Nil controller instance name")
 	assert.False(t, rsControllerInstance1.IsLocked, "Unexpected 1st controller instance status")
 	assert.Equal(t, rm1.GetControllerType(), rsControllerInstance1.ControllerType, "Unexpected controller type")
+	time.Sleep(5 * time.Second)
 
 	// case 2. start controller manager 2
 	cim2, rm2, informers2, client2 := rmSetupControllerMaster(t, s)
@@ -80,6 +81,7 @@ func TestMultipleReplicaSetControllerLifeCycle(t *testing.T) {
 
 	// Controller Instance 1 release workloads
 	rm1.DoneProcessingCurrentWorkloads()
+	time.Sleep(5 * time.Second)
 	rsControllerInstanceRead2, err = client2.CoreV1().ControllerInstances().Get(rm2.GetControllerName(), metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.False(t, rsControllerInstanceRead2.IsLocked, "Unexpected 2nd controller instance status")
