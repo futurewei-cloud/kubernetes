@@ -64,6 +64,8 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 			switch label {
 			case "metadata.name",
 				"metadata.namespace",
+				"metadata.hashkey",
+				"metadata.uid",
 				"spec.nodeName",
 				"spec.restartPolicy",
 				"spec.schedulerName",
@@ -86,7 +88,7 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 	err = scheme.AddFieldLabelConversionFunc(SchemeGroupVersion.WithKind("Node"),
 		func(label, value string) (string, string, error) {
 			switch label {
-			case "metadata.name":
+			case "metadata.name", "metadata.hashkey":
 				return label, value, nil
 			case "spec.unschedulable":
 				return label, value, nil
@@ -103,6 +105,7 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 			switch label {
 			case "metadata.name",
 				"metadata.namespace",
+				"metadata.hashkey",
 				"status.replicas":
 				return label, value, nil
 			default:
@@ -459,6 +462,7 @@ func AddFieldLabelConversionsForEvent(scheme *runtime.Scheme) error {
 				"reason",
 				"source",
 				"type",
+				"metadata.hashkey",
 				"metadata.namespace",
 				"metadata.name":
 				return label, value, nil
@@ -473,7 +477,7 @@ func AddFieldLabelConversionsForNamespace(scheme *runtime.Scheme) error {
 		func(label, value string) (string, string, error) {
 			switch label {
 			case "status.phase",
-				"metadata.name":
+				"metadata.name", "metadata.hashkey":
 				return label, value, nil
 			default:
 				return "", "", fmt.Errorf("field label not supported: %s", label)
@@ -486,6 +490,7 @@ func AddFieldLabelConversionsForSecret(scheme *runtime.Scheme) error {
 		func(label, value string) (string, string, error) {
 			switch label {
 			case "type",
+				"metadata.hashkey",
 				"metadata.namespace",
 				"metadata.name":
 				return label, value, nil

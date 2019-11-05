@@ -972,6 +972,7 @@ func validateFlockerVolumeSource(flocker *core.FlockerVolumeSource, fldPath *fie
 var validVolumeDownwardAPIFieldPathExpressions = sets.NewString(
 	"metadata.name",
 	"metadata.namespace",
+	"metadata.hashkey",
 	"metadata.labels",
 	"metadata.annotations",
 	"metadata.uid")
