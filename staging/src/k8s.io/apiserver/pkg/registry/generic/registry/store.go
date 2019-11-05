@@ -569,8 +569,9 @@ func (e *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		if int64(ttl) != res.TTL {
-			return obj, &ttl, nil, nil
+		updatettl, err := e.calculateUpdateTTL(obj, 0)
+		if int64(ttl) != res.TTL || int64(updatettl) != res.TTL {
+			return obj, &ttl, &updatettl, nil
 		}
 		return obj, nil, nil, nil
 	}, dryrun.IsDryRun(options.DryRun))
@@ -1171,6 +1172,7 @@ func (e *Store) calculateUpdateTTL(obj runtime.Object, defaultTTLOnUpdate int64)
 		defaultTTLOnUpdate = 1
 	}
 	ttl = uint64(defaultTTLOnUpdate)
+
 	if e.TTLOnUpdateFunc != nil {
 		ttl, err = e.TTLOnUpdateFunc(obj, ttl)
 	}
