@@ -40,9 +40,10 @@ function create-kubemark-master {
     export KUBE_TEMP="${KUBE_TEMP}"
 
     export KUBECONFIG="${RESOURCE_DIRECTORY}/kubeconfig.kubemark"
-    export CLUSTER_NAME="${CLUSTER_NAME}-kubemark"
+    export KUBE_GCE_INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX:-e2e-test-${USER}}-kubemark"
+    export CLUSTER_NAME="${KUBE_GCE_INSTANCE_PREFIX}"
     export KUBE_CREATE_NODES=false
-    export KUBE_GCE_INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX}-kubemark"
+  #  export KUBE_GCE_INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX:-e2e-test-${USER}}-kubemark"
 
     # Even if the "real cluster" is private, we shouldn't manage cloud nat.
     export KUBE_GCE_PRIVATE_CLUSTER=false
@@ -90,9 +91,9 @@ function delete-kubemark-master {
   # We intentionally override env vars in subshell to preserve original values.
   # shellcheck disable=SC2030,SC2031
   (
-    export CLUSTER_NAME="${CLUSTER_NAME}-kubemark"
-    export KUBE_GCE_INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX}-kubemark"
-
+    ## reset CLUSTER_NAME to avoid multi kubemark added after e2e.
+    export KUBE_GCE_INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX:-e2e-test-${USER}}-kubemark"
+    export CLUSTER_NAME="${KUBE_GCE_INSTANCE_PREFIX}"
     export KUBE_DELETE_NETWORK=false
     # Even if the "real cluster" is private, we shouldn't manage cloud nat.
     export KUBE_GCE_PRIVATE_CLUSTER=false
