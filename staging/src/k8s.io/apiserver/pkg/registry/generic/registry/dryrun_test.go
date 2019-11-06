@@ -171,7 +171,7 @@ func TestDryRunUpdateDoesntUpdate(t *testing.T) {
 		t.Fatalf("Failed to create new object: %v", err)
 	}
 
-	updateFunc := func(input runtime.Object, res storage.ResponseMeta) (output runtime.Object, ttl *uint64, updateTtl *uint64,err error) {
+	updateFunc := func(input runtime.Object, res storage.ResponseMeta) (output runtime.Object, ttl *uint64, updateTtl *uint64, err error) {
 		u, ok := input.(*unstructured.Unstructured)
 		if !ok {
 			return input, nil, nil, errors.New("Input object is not unstructured")
