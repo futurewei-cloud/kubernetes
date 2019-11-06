@@ -56,6 +56,7 @@ import (
 func testNewReplicaSetControllerFromClient(client clientset.Interface, stopCh chan struct{}, burstReplicas int) (*ReplicaSetController, informers.SharedInformerFactory) {
 	informers := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
 	updateChan := make(chan string)
+	resetCh := make(chan interface{})
 
 	cim := controller.GetControllerInstanceManager()
 	if cim == nil {
@@ -72,6 +73,7 @@ func testNewReplicaSetControllerFromClient(client clientset.Interface, stopCh ch
 		client,
 		burstReplicas,
 		updateChan,
+		resetCh,
 	)
 
 	ret.podListerSynced = alwaysReady
@@ -426,6 +428,7 @@ func TestWatchControllers(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependWatchReactor("replicasets", core.DefaultWatchReactor(fakeWatch, nil))
 	stopCh := make(chan struct{})
+	resetCh := make(chan interface{})
 	updatechan := make(chan string)
 	defer close(stopCh)
 	informers := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
@@ -435,6 +438,7 @@ func TestWatchControllers(t *testing.T) {
 		client,
 		BurstReplicas,
 		updatechan,
+		resetCh,
 	)
 	informers.Start(stopCh)
 

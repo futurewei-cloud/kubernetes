@@ -65,6 +65,9 @@ type ControllerContext struct {
 	// Stop is the stop channel
 	Stop <-chan struct{}
 
+	// Reset is the reset channel for informer filter
+	Reset chan interface{}
+
 	// InformersStarted is closed after all of the controllers have been initialized and are running.  After this point it is safe,
 	// for an individual controller to start the shared informers. Before it is closed, they should not.
 	InformersStarted chan struct{}
@@ -210,12 +213,18 @@ func startReplicaSetController(ctx ControllerContext, workerNum int) (http.Handl
 	if !ctx.AvailableResources[schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}] {
 		return nil, false, nil
 	}
+	rsInformer := ctx.InformerFactory.Apps().V1().ReplicaSets()
+	ctx.Reset = make(chan interface{})
+	rsInformer.Informer().SetResetCh(ctx.Reset)
+	podInformer := ctx.InformerFactory.Core().V1().Pods()
+
 	go replicaset.NewReplicaSetController(
-		ctx.InformerFactory.Apps().V1().ReplicaSets(),
-		ctx.InformerFactory.Core().V1().Pods(),
+		rsInformer,
+		podInformer,
 		ctx.ClientBuilder.ClientOrDie("replicaset-controller"),
 		replicaset.BurstReplicas,
 		ctx.ControllerInstanceUpdateByControllerType,
+		ctx.Reset,
 	).Run(workerNum, ctx.Stop)
 	return nil, true, nil
 }

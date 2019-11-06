@@ -69,13 +69,14 @@ type ControllerBase struct {
 	controllerInstanceUpdateByControllerType chan string
 	mux                                      sync.Mutex
 	unlockControllerInstanceHander           func(local controllerInstanceLocal) error
+	ResetCh                                  chan interface{}
 }
 
 var (
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
 
-func NewControllerBase(controllerType string, client clientset.Interface, updateChan chan string) (*ControllerBase, error) {
+func NewControllerBase(controllerType string, client clientset.Interface, updateChan chan string, resetCh chan interface{}) (*ControllerBase, error) {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
 	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: client.CoreV1().Events("")})
@@ -105,6 +106,7 @@ func NewControllerBase(controllerType string, client clientset.Interface, update
 		curPos:                                   -1,
 		controllerInstanceUpdateByControllerType: updateChan,
 		countOfProcessingWorkItem:                0,
+		ResetCh:                                  resetCh,
 	}
 
 	controller.controllerKey = controller.generateKey()
@@ -284,6 +286,15 @@ func (c *ControllerBase) updateCachedControllerInstances(newControllerInstanceMa
 		return
 	}
 
+	defer func() {
+		go func() {
+			//TODO check the logic of selfUpdated
+			if isUpdated {
+				klog.Infof("The new range %+v is going to send", []int64{newLowerBound, newUpperbound})
+				c.ResetCh <- []int64{newLowerBound, newUpperbound}
+			}
+		}()
+	}()
 	if isUpdated {
 		defer func() {
 			c.curPos = newPos
@@ -371,8 +382,6 @@ func (c *ControllerBase) updateCachedControllerInstances(newControllerInstanceMa
 			// wait for finishing current processing items that belongs to excluded range
 			return
 		}
-
-		// TODO - reset filter
 	}
 
 	if c.state != ControllerStateActive {

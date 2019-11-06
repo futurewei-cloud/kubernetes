@@ -135,6 +135,7 @@ func rmSetupControllerMaster(t *testing.T, s *httptest.Server) (*controller.Cont
 	resyncPeriod := 12 * time.Hour
 	informers := informers.NewSharedInformerFactory(clientset.NewForConfigOrDie(restclient.AddUserAgent(&config, "rs-informers")), resyncPeriod)
 	var updateCh chan string
+	resetCh := make(chan interface{})
 
 	// controller instance manager set up
 	cim := controller.GetControllerInstanceManager()
@@ -155,6 +156,7 @@ func rmSetupControllerMaster(t *testing.T, s *httptest.Server) (*controller.Cont
 		clientset.NewForConfigOrDie(restclient.AddUserAgent(&config, "replicaset-controller")),
 		replicaset.BurstReplicas,
 		updateCh,
+		resetCh,
 	)
 
 	if err != nil {

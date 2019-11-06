@@ -37,6 +37,8 @@ func TestMutationDetector(t *testing.T) {
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return &v1.PodList{}, nil
 		},
+		UpdateFunc: func(options metav1.ListOptions) {
+		},
 	}
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

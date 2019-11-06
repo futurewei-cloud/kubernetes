@@ -358,6 +358,8 @@ func TestUpdate(t *testing.T) {
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				return source.List(options)
 			},
+			UpdateFunc: func(options metav1.ListOptions) {
+			},
 		},
 		&v1.Pod{},
 		0,
