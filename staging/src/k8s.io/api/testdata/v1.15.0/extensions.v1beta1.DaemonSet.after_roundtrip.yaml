@@ -22,6 +22,7 @@ metadata:
   - apiVersion: "11"
     blockOwnerDeletion: true
     controller: false
+    hashkey: 0
     kind: "12"
     name: "13"
     uid: Dz廔ȇ{sŊƏp
@@ -61,6 +62,7 @@ spec:
       - apiVersion: "39"
         blockOwnerDeletion: true
         controller: true
+        hashkey: 0
         kind: "40"
         name: "41"
         uid: ',Q捇ȸ{+ɸ殁'

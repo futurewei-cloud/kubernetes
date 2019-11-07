@@ -338,6 +338,7 @@ func (r *EphemeralContainersREST) Update(ctx context.Context, name string, objIn
 		newPod.Name = newEphemeralContainers.Name
 		newPod.Namespace = newEphemeralContainers.Namespace
 		newPod.UID = newEphemeralContainers.UID
+		newPod.HashKey = newEphemeralContainers.HashKey
 		newPod.ResourceVersion = newEphemeralContainers.ResourceVersion
 		// ephemeral containers
 		newPod.Spec.EphemeralContainers = newEphemeralContainers.EphemeralContainers
@@ -363,6 +364,7 @@ func ephemeralContainersInPod(pod *api.Pod) *api.EphemeralContainers {
 			Name:              pod.Name,
 			Namespace:         pod.Namespace,
 			UID:               pod.UID,
+			HashKey:           pod.HashKey,
 			ResourceVersion:   pod.ResourceVersion,
 			CreationTimestamp: pod.CreationTimestamp,
 		},

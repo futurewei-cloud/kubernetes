@@ -33,6 +33,7 @@ filegroup(
         "//cmd/linkcheck:all-srcs",
         "//cmd/preferredimports:all-srcs",
         "//cmd/verifydependencies:all-srcs",
+        "//cmd/workload-controller-manager:all-srcs",
     ],
     tags = ["automanaged"],
 )

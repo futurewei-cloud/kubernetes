@@ -77,6 +77,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ResourceQuotaList{},
 		&Namespace{},
 		&NamespaceList{},
+		&ControllerInstance{},
+		&ControllerInstanceList{},
 		&ServiceAccount{},
 		&ServiceAccountList{},
 		&Secret{},

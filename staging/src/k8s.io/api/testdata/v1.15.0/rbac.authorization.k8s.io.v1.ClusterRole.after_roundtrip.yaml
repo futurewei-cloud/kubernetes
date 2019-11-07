@@ -31,6 +31,7 @@ metadata:
   - apiVersion: "11"
     blockOwnerDeletion: true
     controller: false
+    hashkey: 0
     kind: "12"
     name: "13"
     uid: Dz廔ȇ{sŊƏp

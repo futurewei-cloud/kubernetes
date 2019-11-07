@@ -19,6 +19,7 @@ package kuberuntime
 import (
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"os"
 	"time"
 
@@ -908,6 +909,7 @@ func (m *kubeGenericRuntimeManager) GetPodStatus(uid kubetypes.UID, name, namesp
 			Name:      name,
 			Namespace: namespace,
 			UID:       uid,
+			HashKey:   fuzzer.GetHashOfUUID(uid),
 		},
 	})
 	klog.V(4).Infof("getSandboxIDByPodUID got sandbox IDs %q for pod %q", podSandboxIDs, podFullName)

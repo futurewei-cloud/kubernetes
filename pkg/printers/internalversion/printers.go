@@ -80,6 +80,7 @@ const (
 func AddHandlers(h printers.PrintHandler) {
 	podColumnDefinitions := []metav1beta1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "HashKey", Type: "integer", Description: metav1.ObjectMeta{}.SwaggerDoc()["hashKey"]},
 		{Name: "Ready", Type: "string", Description: "The aggregate readiness state of this pod for accepting traffic."},
 		{Name: "Status", Type: "string", Description: "The aggregate status of the containers in this pod."},
 		{Name: "Restarts", Type: "integer", Description: "The number of times the containers in this pod have been restarted."},
@@ -126,6 +127,7 @@ func AddHandlers(h printers.PrintHandler) {
 
 	replicaSetColumnDefinitions := []metav1beta1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "HashKey", Type: "integer", Description: metav1.ObjectMeta{}.SwaggerDoc()["hashKey"]},
 		{Name: "Desired", Type: "integer", Description: extensionsv1beta1.ReplicaSetSpec{}.SwaggerDoc()["replicas"]},
 		{Name: "Current", Type: "integer", Description: extensionsv1beta1.ReplicaSetStatus{}.SwaggerDoc()["replicas"]},
 		{Name: "Ready", Type: "integer", Description: extensionsv1beta1.ReplicaSetStatus{}.SwaggerDoc()["readyReplicas"]},
@@ -258,6 +260,16 @@ func AddHandlers(h printers.PrintHandler) {
 	}
 	h.TableHandler(namespaceColumnDefinitions, printNamespace)
 	h.TableHandler(namespaceColumnDefinitions, printNamespaceList)
+
+	controllerInstanceColumnDefinitions := []metav1beta1.TableColumnDefinition{
+		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "ControllerType", Type: "string", Format: "name", Description: "The controller type of the controller instance."},
+		{Name: "ControllerKey", Type: "integer", Description: "The key of the controller instance."},
+		{Name: "WorkloadNum", Type: "integer", Description: "The number of workload instances assigned to this controller instance."},
+		{Name: "IsLocked", Type: "boolean", Description: "The controller is locked or not."},
+	}
+	h.TableHandler(controllerInstanceColumnDefinitions, printControllerInstance)
+	h.TableHandler(controllerInstanceColumnDefinitions, printControllerInstanceList)
 
 	secretColumnDefinitions := []metav1beta1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
@@ -702,7 +714,7 @@ func printPod(pod *api.Pod, options printers.GenerateOptions) ([]metav1.TableRow
 		reason = "Terminating"
 	}
 
-	row.Cells = append(row.Cells, pod.Name, fmt.Sprintf("%d/%d", readyContainers, totalContainers), reason, int64(restarts), translateTimestampSince(pod.CreationTimestamp))
+	row.Cells = append(row.Cells, pod.Name, pod.HashKey, fmt.Sprintf("%d/%d", readyContainers, totalContainers), reason, int64(restarts), translateTimestampSince(pod.CreationTimestamp))
 	if options.Wide {
 		nodeName := pod.Spec.NodeName
 		nominatedNodeName := pod.Status.NominatedNodeName
@@ -838,7 +850,7 @@ func printReplicaSet(obj *apps.ReplicaSet, options printers.GenerateOptions) ([]
 	currentReplicas := obj.Status.Replicas
 	readyReplicas := obj.Status.ReadyReplicas
 
-	row.Cells = append(row.Cells, obj.Name, int64(desiredReplicas), int64(currentReplicas), int64(readyReplicas), translateTimestampSince(obj.CreationTimestamp))
+	row.Cells = append(row.Cells, obj.Name, obj.HashKey, int64(desiredReplicas), int64(currentReplicas), int64(readyReplicas), translateTimestampSince(obj.CreationTimestamp))
 	if options.Wide {
 		names, images := layoutContainerCells(obj.Spec.Template.Spec.Containers)
 		row.Cells = append(row.Cells, names, images, metav1.FormatLabelSelector(obj.Spec.Selector))
@@ -1202,6 +1214,30 @@ func printNamespaceList(list *api.NamespaceList, options printers.GenerateOption
 	rows := make([]metav1beta1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
 		r, err := printNamespace(&list.Items[i], options)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, r...)
+	}
+	return rows, nil
+}
+
+func printControllerInstance(obj *api.ControllerInstance, options printers.GenerateOptions) ([]metav1beta1.TableRow, error) {
+	row := metav1beta1.TableRow{
+		Object: runtime.RawExtension{Object: obj},
+	}
+	row.Cells = append(row.Cells, obj.Name)
+	row.Cells = append(row.Cells, obj.ControllerType)
+	row.Cells = append(row.Cells, obj.ControllerKey)
+	row.Cells = append(row.Cells, obj.WorkloadNum)
+	row.Cells = append(row.Cells, obj.IsLocked)
+	return []metav1beta1.TableRow{row}, nil
+}
+
+func printControllerInstanceList(list *api.ControllerInstanceList, options printers.GenerateOptions) ([]metav1beta1.TableRow, error) {
+	rows := make([]metav1beta1.TableRow, 0, len(list.Items))
+	for i := range list.Items {
+		r, err := printControllerInstance(&list.Items[i], options)
 		if err != nil {
 			return nil, err
 		}

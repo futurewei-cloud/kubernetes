@@ -365,6 +365,7 @@ func TestValidateStatefulSet(t *testing.T) {
 				if !strings.HasPrefix(field, "spec.template.") &&
 					field != "metadata.name" &&
 					field != "metadata.namespace" &&
+					field != "metadata.hashkey" &&
 					field != "spec.selector" &&
 					field != "spec.template" &&
 					field != "GCEPersistentDisk.ReadOnly" &&
@@ -1983,6 +1984,7 @@ func TestValidateDaemonSet(t *testing.T) {
 				!strings.HasPrefix(field, "spec.updateStrategy") &&
 				field != "metadata.name" &&
 				field != "metadata.namespace" &&
+				field != "metadata.hashkey" &&
 				field != "spec.selector" &&
 				field != "spec.template" &&
 				field != "GCEPersistentDisk.ReadOnly" &&
@@ -2957,6 +2959,7 @@ func TestValidateReplicaSet(t *testing.T) {
 			if !strings.HasPrefix(field, "spec.template.") &&
 				field != "metadata.name" &&
 				field != "metadata.namespace" &&
+				field != "metadata.hashkey" &&
 				field != "spec.selector" &&
 				field != "spec.template" &&
 				field != "GCEPersistentDisk.ReadOnly" &&

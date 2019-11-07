@@ -46,6 +46,7 @@ go_test(
         "//pkg/apis/batch/install:go_default_library",
         "//pkg/apis/core:go_default_library",
         "//pkg/features:go_default_library",
+        "//staging/src/k8s.io/apimachinery/pkg/apis/meta/fuzzer:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/types:go_default_library",
         "//staging/src/k8s.io/apiserver/pkg/endpoints/request:go_default_library",

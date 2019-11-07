@@ -18,6 +18,7 @@ package glusterfs
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"math"
 	"math/rand"
 	"net"
@@ -217,7 +218,7 @@ func (plugin *glusterfsPlugin) newUnmounterInternal(volName string, podUID types
 	return &glusterfsUnmounter{&glusterfs{
 		volName:         volName,
 		mounter:         mounter,
-		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID}},
+		pod:             &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID, HashKey: fuzzer.GetHashOfUUID(podUID)}},
 		plugin:          plugin,
 		MetricsProvider: volume.NewMetricsStatFS(plugin.host.GetPodVolumeDir(podUID, utilstrings.EscapeQualifiedName(glusterfsPluginName), volName)),
 	}}, nil

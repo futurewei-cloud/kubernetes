@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"strings"
 
 	"k8s.io/api/core/v1"
@@ -63,6 +64,7 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName types.Node
 		}
 		hash.DeepHashObject(hasher, pod)
 		pod.UID = types.UID(hex.EncodeToString(hasher.Sum(nil)[0:]))
+		pod.HashKey = fuzzer.GetHashOfUUID(pod.UID)
 		klog.V(5).Infof("Generated UID %q pod %q from %s", pod.UID, pod.Name, source)
 	}
 

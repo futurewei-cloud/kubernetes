@@ -253,3 +253,9 @@ func (f *FakeControllerSource) Shutdown() {
 	f.lock.Lock() // Purposely no unlock.
 	f.Broadcaster.Shutdown()
 }
+
+func (f *FakePVCControllerSource) Update(options metav1.ListOptions) {
+}
+
+func (f *FakeControllerSource) Update(options metav1.ListOptions) {
+}

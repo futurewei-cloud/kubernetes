@@ -263,6 +263,17 @@ func (o *cachingObject) SetUID(uid types.UID) {
 		func() { o.object.SetUID(uid) },
 	)
 }
+func (o *cachingObject) GetHashKey() int64 {
+	o.lock.RLock()
+	defer o.lock.RUnlock()
+	return o.object.GetHashKey()
+}
+func (o *cachingObject) SetHashKey(hashKey int64) {
+	o.conditionalSet(
+		func() bool { return o.object.GetHashKey() == hashKey },
+		func() { o.object.SetHashKey(hashKey) },
+	)
+}
 func (o *cachingObject) GetResourceVersion() string {
 	o.lock.RLock()
 	defer o.lock.RUnlock()

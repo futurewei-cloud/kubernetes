@@ -19,6 +19,8 @@ package cacher
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"reflect"
 	goruntime "runtime"
 	"strconv"
@@ -682,11 +684,14 @@ func testCacherSendBookmarkEvents(t *testing.T, watchCacheEnabled, allowWatchBoo
 	go func() {
 		deadline := time.Now().Add(time.Second)
 		for i := 0; time.Now().Before(deadline); i++ {
+			uid := uuid.NewUUID()
 			err = cacher.watchCache.Add(&examplev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            fmt.Sprintf("pod-%d", i),
 					Namespace:       "ns",
 					ResourceVersion: fmt.Sprintf("%v", resourceVersion+uint64(i)),
+					UID:             uid,
+					HashKey:         fuzzer.GetHashOfUUID(uid),
 				}})
 			if err != nil {
 				t.Fatalf("failed to add a pod: %v", err)

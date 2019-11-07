@@ -230,6 +230,9 @@ var ValidateServiceName = apimachineryvalidation.NameIsDNS1035Label
 // trailing dashes are allowed.
 var ValidateNodeName = apimachineryvalidation.NameIsDNSSubdomain
 
+// ValidateControllerTypeName can be used to check whether the given controller type name is valid.
+var ValidateControllerTypeName = apimachineryvalidation.ValidateControllerTypeName
+
 // ValidateNamespaceName can be used to check whether the given namespace name is valid.
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
@@ -969,6 +972,7 @@ func validateFlockerVolumeSource(flocker *core.FlockerVolumeSource, fldPath *fie
 var validVolumeDownwardAPIFieldPathExpressions = sets.NewString(
 	"metadata.name",
 	"metadata.namespace",
+	"metadata.hashkey",
 	"metadata.labels",
 	"metadata.annotations",
 	"metadata.uid")
@@ -3236,6 +3240,23 @@ func ValidatePodSpec(spec *core.PodSpec, fldPath *field.Path) field.ErrorList {
 		allErrs = append(allErrs, validateOverhead(spec.Overhead, fldPath.Child("overhead"))...)
 	}
 
+	return allErrs
+}
+
+// ValidateControllerInstance tests that the specified controller instance fields has valid data
+func ValidateControllerInstance(controllerInstance *core.ControllerInstance) field.ErrorList {
+	allErrs := ValidateObjectMeta(&controllerInstance.ObjectMeta, false, ValidateControllerTypeName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateControllerInstanceUpdate tests make sure a controller instance update can be applied.
+func ValidateControllerInstanceUpdate(newControllerInstance *core.ControllerInstance, oldControllerInstance *core.ControllerInstance) field.ErrorList {
+	allErrs := ValidateObjectMeta(&newControllerInstance.ObjectMeta, false, ValidateControllerTypeName, field.NewPath("metadata"))
+	if newControllerInstance.UID != oldControllerInstance.UID {
+		klog.Infof("Intended to update controller instance id. Not allowed. new instance id [%v], old instance id [%v]", newControllerInstance.UID, oldControllerInstance.UID)
+		uidDiff := diff.ObjectDiff(newControllerInstance.UID, oldControllerInstance.UID)
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("UID"), fmt.Sprintf("Update controller instance id is not allowed. %v", uidDiff)))
+	}
 	return allErrs
 }
 

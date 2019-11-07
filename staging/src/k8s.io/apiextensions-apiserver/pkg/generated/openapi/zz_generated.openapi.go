@@ -1996,6 +1996,13 @@ func schema_pkg_apis_meta_v1_ObjectMeta(ref common.ReferenceCallback) common.Ope
 							Format:      "",
 						},
 					},
+					"hashKey": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HashKey is used to distribute workload. It is typically generated automatically by the server on successful creation of a resource and is not allowed to change on PUT operations.\n\nPopulated by the system. Read-only.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 					"resourceVersion": {
 						SchemaProps: spec.SchemaProps{
 							Description: "An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.\n\nPopulated by the system. Read-only. Value must be treated as opaque by clients and . More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency",
@@ -2160,6 +2167,13 @@ func schema_pkg_apis_meta_v1_OwnerReference(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"hashKey": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Hashkey of the referent.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 					"controller": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If true, this reference points to the managing controller.",
@@ -2175,7 +2189,7 @@ func schema_pkg_apis_meta_v1_OwnerReference(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"apiVersion", "kind", "name", "uid"},
+				Required: []string{"apiVersion", "kind", "name", "uid", "hashKey"},
 			},
 		},
 	}
