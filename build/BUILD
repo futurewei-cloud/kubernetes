@@ -38,6 +38,10 @@ DOCKERIZED_BINARIES = {
         "base": "@debian-base-{ARCH}//image",
         "target": "//cmd/kube-controller-manager:kube-controller-manager",
     },
+    "workload-controller-manager": {
+        "base": "@debian-base-{ARCH}//image",
+        "target": "//cmd/workload-controller-manager:workload-controller-manager",
+    },
     "kube-scheduler": {
         "base": "@debian-base-{ARCH}//image",
         "target": "//cmd/kube-scheduler:kube-scheduler",
@@ -137,6 +141,7 @@ release_filegroup(
         "//cluster/gce/gci/mounter",
         "//cmd/kube-apiserver",
         "//cmd/kube-controller-manager",
+        "//cmd/workload-controller-manager",
         "//cmd/kube-scheduler",
     ]),
 )

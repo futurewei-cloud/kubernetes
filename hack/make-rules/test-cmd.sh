@@ -86,6 +86,25 @@ function run_kube_controller_manager() {
   kube::util::wait_for_url "http://127.0.0.1:${CTLRMGR_PORT}/healthz" "controller-manager"
 }
 
+# Run run_workload_controller_manager
+#
+# Exports
+#   WORKLOAD_CTLRMGR_PID
+function run_workload_controller_manager() {
+  kube::log::status "Building workload-controller-manager"
+  make -C "${KUBE_ROOT}" WHAT="cmd/workload-controller-manager"
+
+  # Start controller manager
+  kube::log::status "Starting workload-controller-manager"
+  "${KUBE_OUTPUT_HOSTBIN}/workload-controller-manager" \
+    --port="${WORKLOAD_CTLRMGR_PORT}" \
+    --kube-api-content-type="${KUBE_TEST_API_TYPE-}" \
+    --master="127.0.0.1:${API_PORT}" 1>&2 &
+  export WORKLOAD_CTLRMGR_PID=$!
+
+  kube::util::wait_for_url "http://127.0.0.1:${WORKLOAD_CTLRMGR_PID}/healthz" "workload-controller-manager"
+}
+
 # Creates a node object with name 127.0.0.1. This is required because we do not
 # run kubelet.
 # 
@@ -127,6 +146,7 @@ kube::log::status "Running kubectl tests for kube-apiserver"
 setup
 run_kube_apiserver
 run_kube_controller_manager
+run_workload_controller_manager
 create_node
 export SUPPORTED_RESOURCES=("*")
 # WARNING: Do not wrap this call in a subshell to capture output, e.g. output=$(runTests)
