@@ -14,7 +14,7 @@ See [disable replicaset controller in kube controller manager](https://github.co
     1. export KUBECONFIG=<absolution path to admin.conf>
     1. Make sure that the copied admin.conf is accessible from the host
     1. Copy cmd/workload-controller-manager/config/controllerconfig.json to the dir /usr/local/conf
-    1. Start the workload-controller-manager by running workload-controller-manager --controllerconfig /usr/local/conf/controllerconfig.json
+    1. Start the workload-controller-manager by running workload-controller-manager --controllerconfig /usr/local/conf/controllerconfig.json [--port=<port number - default to 10352>]
 
 1. Debug in vscode OR
     1. Select Debug->Add Configuration ...

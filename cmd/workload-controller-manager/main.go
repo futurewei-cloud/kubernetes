@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"k8s.io/klog"
 	"net"
 	"os"
 
@@ -38,6 +39,7 @@ import (
 
 var kubeconfig string
 var controllerconfigfilepath string
+var workloadControllerPort int
 
 const (
 	// WorkloadControllerManagerUserAgent is the userAgent name when starting workload-controller managers.
@@ -48,6 +50,7 @@ func init() {
 	kubeconfigEnv := os.Getenv("KUBECONFIG")
 	flag.StringVar(&kubeconfig, "kubeconfig", kubeconfigEnv, "absolute path to the kubeconfig file")
 	flag.StringVar(&controllerconfigfilepath, "controllerconfig", "", "absolute path to the controllerconfig file")
+	flag.IntVar(&workloadControllerPort, "port", ports.InsecureWorkloadControllerManagerPort, "port for current workload controller manager rest service")
 	flag.Parse()
 }
 
@@ -91,10 +94,12 @@ func getConfig() (*controllerManagerConfig.Config, error) {
 		//EventRecorder:        eventRecorder,
 	}
 
+	klog.Infof("Current workload controller port %d", workloadControllerPort)
+
 	// insecure serving
 	insecureServing := (&apiserveroptions.DeprecatedInsecureServingOptions{
 		BindAddress: net.ParseIP("0.0.0.0"),
-		BindPort:    ports.InsecureWorkloadControllerManagerPort,
+		BindPort:    workloadControllerPort,
 		BindNetwork: "tcp",
 	}).WithLoopback()
 
