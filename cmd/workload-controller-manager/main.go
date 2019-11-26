@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/logs"
+	_ "k8s.io/component-base/metrics/prometheus/clientgo" // load all the prometheus client-go plugin
+	_ "k8s.io/component-base/metrics/prometheus/version"  // for version metric registration
 	"k8s.io/kubernetes/cmd/workload-controller-manager/app"
 
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
