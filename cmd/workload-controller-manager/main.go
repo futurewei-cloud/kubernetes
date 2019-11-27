@@ -19,20 +19,27 @@ package main
 import (
 	"flag"
 	"fmt"
+	"k8s.io/klog"
+	"net"
 	"os"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/logs"
+	_ "k8s.io/component-base/metrics/prometheus/clientgo" // load all the prometheus client-go plugin
+	_ "k8s.io/component-base/metrics/prometheus/version"  // for version metric registration
 	"k8s.io/kubernetes/cmd/workload-controller-manager/app"
 
+	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	controllerManagerConfig "k8s.io/kubernetes/cmd/workload-controller-manager/app/config"
+	"k8s.io/kubernetes/pkg/master/ports"
 )
 
 var kubeconfig string
 var controllerconfigfilepath string
+var workloadControllerPort int
 
 const (
 	// WorkloadControllerManagerUserAgent is the userAgent name when starting workload-controller managers.
@@ -43,49 +50,42 @@ func init() {
 	kubeconfigEnv := os.Getenv("KUBECONFIG")
 	flag.StringVar(&kubeconfig, "kubeconfig", kubeconfigEnv, "absolute path to the kubeconfig file")
 	flag.StringVar(&controllerconfigfilepath, "controllerconfig", "", "absolute path to the controllerconfig file")
+	flag.IntVar(&workloadControllerPort, "port", ports.InsecureWorkloadControllerManagerPort, "port for current workload controller manager rest service")
 	flag.Parse()
 }
 
 func main() {
-
-	var err error
-
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	controllerconfig, err := controllerManagerConfig.NewControllerConfig(controllerconfigfilepath)
-
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("using controller configuration from ", controllerconfigfilepath)
-	}
-
-	if err != nil {
-		panic(err)
-	}
-
-	/*
-		store := WatchResources(clientSet)
-
-		for {
-			controllermanagersFromStore := store.List()
-			fmt.Printf("controllermanagers in store: %d\n", len(controllermanagersFromStore))
-
-			time.Sleep(2 * time.Second)
-		}*/
-
-	controllerManagerKubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		panic(err)
-	}
-
-	client, err := clientset.NewForConfig(restclient.AddUserAgent(controllerManagerKubeConfig, WorkloadControllerManagerUserAgent))
+	c, err := getConfig()
 	if err != nil {
 		panic(err)
 	}
 
 	//eventRecorder := createRecorder(client, WorkloadControllerManagerUserAgent)
+
+	app.StartControllerManager(c.Complete(), wait.NeverStop)
+}
+
+func getConfig() (*controllerManagerConfig.Config, error) {
+	controllerconfig, err := controllerManagerConfig.NewControllerConfig(controllerconfigfilepath)
+
+	if err != nil {
+		return nil, err
+	} else {
+		fmt.Println("using controller configuration from ", controllerconfigfilepath)
+	}
+
+	controllerManagerKubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := clientset.NewForConfig(restclient.AddUserAgent(controllerManagerKubeConfig, WorkloadControllerManagerUserAgent))
+	if err != nil {
+		return nil, err
+	}
 
 	c := &controllerManagerConfig.Config{
 		Client:                  client,
@@ -94,7 +94,47 @@ func main() {
 		//EventRecorder:        eventRecorder,
 	}
 
-	app.StartControllerManager(c.Complete(), wait.NeverStop)
+	klog.Infof("Current workload controller port %d", workloadControllerPort)
+
+	// insecure serving
+	insecureServing := (&apiserveroptions.DeprecatedInsecureServingOptions{
+		BindAddress: net.ParseIP("0.0.0.0"),
+		BindPort:    workloadControllerPort,
+		BindNetwork: "tcp",
+	}).WithLoopback()
+
+	err = insecureServing.ApplyTo(&c.InsecureServing, &c.LoopbackClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// secure serving - TODO
+	/*
+	secureServing := apiserveroptions.NewSecureServingOptions().WithLoopback()
+	secureServing.BindPort = ports.WorkloadControllerManagerPort
+	secureServing.ServerCert.PairName = "admin"
+	secureServing.ServerCert.CertDirectory = ""
+	err = secureServing.ApplyTo(&c.SecureServing, &c.LoopbackClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	authentication := apiserveroptions.NewDelegatingAuthenticationOptions()
+	if secureServing.BindPort != 0 || secureServing.Listener != nil {
+		err = authentication.ApplyTo(&c.Authentication, c.SecureServing, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	authorization := apiserveroptions.NewDelegatingAuthorizationOptions()
+	err = authorization.ApplyTo(&c.Authorization)
+	if err != nil {
+		return nil, err
+	}
+	 */
+
+	return c, nil
 }
 
 /*

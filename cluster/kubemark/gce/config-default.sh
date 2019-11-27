@@ -31,7 +31,7 @@ NUM_WINDOWS_NODES=${KUBEMARK_NUM_WINDOWS_NODES:-0}
 
 ## Fix error when run start-kubemark.sh:             * Fix error: cluster/kubemark/gce/config-default.sh: line 32: TEST_CLUSTER_LOG_LEVEL: unbound variable
 TEST_CLUSTER_LOG_LEVEL="${TEST_CLUSTER_LOG_LEVEL:---v=4}"
-HOLLOW_KUBELET_TEST_LOG_LEVEL="${HOLLOW_KUBELET_TEST_LOG_LEVEL:-$TEST_CLUSTER_LOG_LEVEL:}"
+HOLLOW_KUBELET_TEST_LOG_LEVEL="${HOLLOW_KUBELET_TEST_LOG_LEVEL:-$TEST_CLUSTER_LOG_LEVEL}"
 HOLLOW_PROXY_TEST_LOG_LEVEL="${HOLLOW_PROXY_TEST_LOG_LEVEL:-$TEST_CLUSTER_LOG_LEVEL}"
 
 # ContentType used by all components to communicate with apiserver.

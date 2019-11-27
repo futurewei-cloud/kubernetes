@@ -1,6 +1,7 @@
 cluster/images/etcd-version-monitor
 cluster/images/etcd/migrate
 cmd/kube-controller-manager/app
+cmd/workload-controller-manager/app
 cmd/kube-proxy/app
 cmd/linkcheck
 cmd/preferredimports
