@@ -636,6 +636,9 @@ function create-master-auth {
   if [[ -n "${KUBE_CONTROLLER_MANAGER_TOKEN:-}" ]]; then
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_CONTROLLER_MANAGER_TOKEN}," "system:kube-controller-manager,uid:system:kube-controller-manager"
   fi
+  if [[ -n "${WORKLOAD_CONTROLLER_MANAGER_TOKEN:-}" ]]; then
+    append_or_replace_prefixed_line "${known_tokens_csv}" "${WORKLOAD_CONTROLLER_MANAGER_TOKEN}," "system:workload-controller-manager,uid:system:workload-controller-manager"
+  fi  
   if [[ -n "${KUBE_SCHEDULER_TOKEN:-}" ]]; then
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_SCHEDULER_TOKEN},"          "system:kube-scheduler,uid:system:kube-scheduler"
   fi
@@ -989,6 +992,7 @@ rules:
   - level: None
     users:
       - system:kube-controller-manager
+      - system:workload-controller-manager
       - system:kube-scheduler
       - system:serviceaccount:kube-system:endpoint-controller
     verbs: ["get", "update"]
@@ -1013,6 +1017,7 @@ rules:
   - level: None
     users:
       - system:kube-controller-manager
+      - system:workload-controller-manager
     verbs: ["get", "list"]
     resources:
       - group: "metrics.k8s.io"
@@ -1132,6 +1137,28 @@ contexts:
     user: ${component}
   name: ${component}
 current-context: ${component}
+EOF
+}
+
+function create-workloadcontrollerconfig {
+  local component=$1
+  local node_workers_num=$2
+  local replicaset_workers_num=$3
+  echo "Creating workloadcontrollerconfi file for component ${component}" >> /home/kubernetes/kubernetes-configlog.txt
+  mkdir -p /etc/srv/kubernetes/${component}
+  cat <<EOF >/etc/srv/kubernetes/${component}/controllerconfig.json
+{
+    "controllers": [
+        {
+            "type":    "node",
+            "workers":     ${node_workers_num}
+        },
+        {
+            "type":    "replicaset",
+            "workers":    ${replicaset_workers_num}
+        }
+    ]
+}
 EOF
 }
 
@@ -2193,7 +2220,7 @@ function update-node-label() {
 #   CLOUD_CONFIG_MOUNT
 #   DOCKER_REGISTRY
 function start-kube-controller-manager {
-  echo "Start kubernetes controller-manager"
+  echo "Start kubernetes controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
   create-kubeconfig "kube-controller-manager" ${KUBE_CONTROLLER_MANAGER_TOKEN}
   prepare-log-file /var/log/kube-controller-manager.log
   # Calculate variables and assemble the command line.
@@ -2280,6 +2307,58 @@ function start-kube-controller-manager {
   sed -i -e "s@{{cpurequest}}@${KUBE_CONTROLLER_MANAGER_CPU_REQUEST}@g" "${src_file}"
 
   cp "${src_file}" /etc/kubernetes/manifests
+}
+
+# Starts workload controller manager.
+# It prepares the log file, loads the docker image, calculates variables, sets them
+# in the manifest file, and then copies the manifest file to /etc/kubernetes/manifests.
+#
+# Assumed vars (which are calculated in function compute-master-manifest-variables)
+#   CLOUD_CONFIG_OPT
+#   CLOUD_CONFIG_VOLUME
+#   CLOUD_CONFIG_MOUNT
+#   DOCKER_REGISTRY
+function start-workload-controller-manager {
+  echo "Start workload controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
+  create-kubeconfig "workload-controller-manager" ${WORKLOAD_CONTROLLER_MANAGER_TOKEN}
+  echo "done to create kube config" >> /home/kubernetes/kubernetes-configlog.txt
+  create-workloadcontrollerconfig "workload-controller-manager" ${NODE_WORKERS_NUM} ${REPLICASET_WORKERS_NUM}
+  echo "done to create workloadcontrollerconfig" >> /home/kubernetes/kubernetes-configlog.txt
+  prepare-log-file /var/log/workload-controller-manager.log
+  # Calculate variables and assemble the command line.
+  local params="${WORKLOAD_CONTROLLER_MANAGER_TEST_LOG_LEVEL:-"--v=2"}"
+  params+=" --controllerconfig=/etc/srv/kubernetes/workload-controller-manager/controllerconfig.json"
+  params+=" --kubeconfig=/etc/srv/kubernetes/workload-controller-manager/kubeconfig"
+  
+  echo "${params}" >> /home/kubernetes/kubernetes-configlog.txt
+  # Disable using HPA metrics REST clients if metrics-server isn't enabled,
+  # or if we want to explicitly disable it by setting HPA_USE_REST_CLIENT.
+
+  local -r kube_rc_docker_tag=$(cat /home/kubernetes/kube-docker-files/workload-controller-manager.docker_tag)
+  echo "${kube_rc_docker_tag}" >> /home/kubernetes/kubernetes-configlog.txt
+  local container_env=""
+  if [[ -n "${ENABLE_CACHE_MUTATION_DETECTOR:-}" ]]; then
+    container_env="\"env\":[{\"name\": \"KUBE_CACHE_MUTATION_DETECTOR\", \"value\": \"${ENABLE_CACHE_MUTATION_DETECTOR}\"}],"
+  fi
+
+  local -r src_file="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/workload-controller-manager.manifest"
+  # Evaluate variables.
+  sed -i -e "s@{{pillar\['kube_docker_registry'\]}}@${DOCKER_REGISTRY}@g" "${src_file}"
+  sed -i -e "s@{{pillar\['workload-controller-manager_docker_tag'\]}}@${kube_rc_docker_tag}@g" "${src_file}"
+  sed -i -e "s@{{params}}@${params}@g" "${src_file}"
+  sed -i -e "s@{{container_env}}@${container_env}@g" ${src_file}
+  sed -i -e "s@{{cloud_config_mount}}@${CLOUD_CONFIG_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{cloud_config_volume}}@${CLOUD_CONFIG_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{additional_cloud_config_mount}}@@g" "${src_file}"
+  sed -i -e "s@{{additional_cloud_config_volume}}@@g" "${src_file}"
+  sed -i -e "s@{{pv_recycler_mount}}@${PV_RECYCLER_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{pv_recycler_volume}}@${PV_RECYCLER_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{flexvolume_hostpath_mount}}@${FLEXVOLUME_HOSTPATH_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{flexvolume_hostpath}}@${FLEXVOLUME_HOSTPATH_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{cpurequest}}@${WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST}@g" "${src_file}"
+
+  cp "${src_file}" /etc/kubernetes/manifests
+  echo "Done to start workload controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
 }
 
 # Starts kubernetes scheduler.
@@ -3125,7 +3204,7 @@ EOF
 
 ########### Main Function ###########
 function main() {
-  echo "Start to configure instance for kubernetes"
+  echo "Start to configure instance for kubernetes" >> /home/kubernetes/kubernetes-configlog.txt
 
   readonly UUID_MNT_PREFIX="/mnt/disks/by-uuid/google-local-ssds"
   readonly UUID_BLOCK_PREFIX="/dev/disk/by-uuid/google-local-ssds"
@@ -3134,7 +3213,12 @@ function main() {
 
   # Resource requests of master components.
   KUBE_CONTROLLER_MANAGER_CPU_REQUEST="${KUBE_CONTROLLER_MANAGER_CPU_REQUEST:-200m}"
+  WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST="${WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST:-200m}"
   KUBE_SCHEDULER_CPU_REQUEST="${KUBE_SCHEDULER_CPU_REQUEST:-75m}"
+
+    #workload controller manager config param
+  NODE_WORKERS_NUM="${NODE_WORKERS_NUM:-5}"
+  REPLICASET_WORKERS_NUM="${REPLICASET_WORKERS_NUM:-10}"
 
   # Use --retry-connrefused opt only if it's supported by curl.
   CURL_RETRY_CONNREFUSED=""
@@ -3171,8 +3255,10 @@ function main() {
   fi
 
   KUBE_CONTROLLER_MANAGER_TOKEN="$(secure_random 32)"
+  WORKLOAD_CONTROLLER_MANAGER_TOKEN="$(secure_random 32)"
   KUBE_SCHEDULER_TOKEN="$(secure_random 32)"
   KUBE_CLUSTER_AUTOSCALER_TOKEN="$(secure_random 32)"
+
   if [[ "${ENABLE_L7_LOADBALANCING:-}" == "glbc" ]]; then
     GCE_GLBC_TOKEN="$(secure_random 32)"
   fi
@@ -3234,6 +3320,7 @@ function main() {
     fi
     start-kube-controller-manager
     start-kube-scheduler
+    start-workload-controller-manager
     wait-till-apiserver-ready
     start-kube-addons
     start-cluster-autoscaler
