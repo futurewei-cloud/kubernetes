@@ -637,7 +637,7 @@ function create-master-auth {
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_CONTROLLER_MANAGER_TOKEN}," "system:kube-controller-manager,uid:system:kube-controller-manager"
   fi
   if [[ -n "${WORKLOAD_CONTROLLER_MANAGER_TOKEN:-}" ]]; then
-    append_or_replace_prefixed_line "${known_tokens_csv}" "${WORKLOAD_CONTROLLER_MANAGER_TOKEN}," "system:workload-controller-manager,uid:system:workload-controller-manager"
+    append_or_replace_prefixed_line "${known_tokens_csv}" "${WORKLOAD_CONTROLLER_MANAGER_TOKEN}," "admin,admin,system:masters"
   fi  
   if [[ -n "${KUBE_SCHEDULER_TOKEN:-}" ]]; then
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_SCHEDULER_TOKEN},"          "system:kube-scheduler,uid:system:kube-scheduler"
