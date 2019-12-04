@@ -19,6 +19,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"math"
 	"math/rand"
 	"net/http/httptest"
@@ -35,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
@@ -61,10 +62,12 @@ func NewFakeControllerExpectationsLookup(ttl time.Duration) (*ControllerExpectat
 }
 
 func newReplicationController(replicas int) *v1.ReplicationController {
+	uid := uuid.NewUUID()
 	rc := &v1.ReplicationController{
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			UID:             uuid.NewUUID(),
+			UID:             uid,
+			HashKey:         fuzzer.GetHashOfUUID(uid),
 			Name:            "foobar",
 			Namespace:       metav1.NamespaceDefault,
 			ResourceVersion: "18",
@@ -123,10 +126,12 @@ func newPodList(store cache.Store, count int, status v1.PodPhase, rc *v1.Replica
 }
 
 func newReplicaSet(name string, replicas int) *apps.ReplicaSet {
+	uid := uuid.NewUUID()
 	return &apps.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			UID:             uuid.NewUUID(),
+			UID:             uid,
+			HashKey:         fuzzer.GetHashOfUUID(uid),
 			Name:            name,
 			Namespace:       metav1.NamespaceDefault,
 			ResourceVersion: "18",

@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -516,6 +517,7 @@ func TestApplyManagedFields(t *testing.T) {
 			"namespace": "default",
 			"selfLink": "` + accessor.GetSelfLink() + `",
 			"uid": "` + string(accessor.GetUID()) + `",
+			"hashKey": ` + strconv.FormatInt(accessor.GetHashKey(), 10) + `,
 			"resourceVersion": "` + accessor.GetResourceVersion() + `",
 			"creationTimestamp": "` + accessor.GetCreationTimestamp().UTC().Format(time.RFC3339) + `",
 			"labels": {

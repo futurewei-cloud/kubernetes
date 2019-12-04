@@ -17,9 +17,11 @@ limitations under the License.
 package cache
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/clock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -82,6 +84,7 @@ type controller struct {
 // Controller is a generic controller framework.
 type Controller interface {
 	Run(stopCh <-chan struct{})
+	RunWithReset(stopCh <-chan struct{}, resetCh chan interface{})
 	HasSynced() bool
 	LastSyncResourceVersion() string
 }
@@ -122,6 +125,57 @@ func (c *controller) Run(stopCh <-chan struct{}) {
 
 	wg.StartWithChannel(stopCh, r.Run)
 
+	wait.Until(c.processLoop, time.Second, stopCh)
+}
+
+// RunWithReset begins processing items, and will continue until a value is sent down stopCh.
+// It's an error to call Run more than once.
+// Run blocks; call via go.
+func (c *controller) RunWithReset(stopCh <-chan struct{}, resetCh chan interface{}) {
+	defer utilruntime.HandleCrash()
+	go func() {
+		<-stopCh
+		c.config.Queue.Close()
+	}()
+
+	r := NewReflector(
+		c.config.ListerWatcher,
+		c.config.ObjectType,
+		c.config.Queue,
+		c.config.FullResyncPeriod,
+	)
+	r.ShouldResync = c.config.ShouldResync
+	r.clock = c.clock
+
+	c.reflectorMutex.Lock()
+	c.reflector = r
+	c.reflectorMutex.Unlock()
+
+	go func() {
+		wait.Until(func() {
+			select {
+			case signal := <-resetCh:
+				bounds, ok := signal.([]int64)
+				if ok {
+					c.config.ListerWatcher.Update(createHashkeyListOptions(bounds[0], bounds[1]))
+					r = NewReflector(
+						c.config.ListerWatcher,
+						c.config.ObjectType,
+						c.config.Queue,
+						c.config.FullResyncPeriod,
+					)
+					r.ShouldResync = c.config.ShouldResync
+					c.reflectorMutex.Lock()
+					c.reflector = r
+					c.reflectorMutex.Unlock()
+				}
+			default:
+				if err := r.ListAndWatch(stopCh); err != nil {
+					utilruntime.HandleError(err)
+				}
+			}
+		}, r.period, stopCh)
+	}()
 	wait.Until(c.processLoop, time.Second, stopCh)
 }
 
@@ -380,4 +434,14 @@ func newInformer(
 		},
 	}
 	return New(cfg)
+}
+
+func createHashkeyListOptions(lower int64, upper int64) metav1.ListOptions {
+	operator := "gt"
+	if lower == 0 {
+		operator = "gte"
+	}
+	return metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.hashkey=%s:%v,metadata.hashkey=lte:%+v", operator, lower, upper),
+	}
 }

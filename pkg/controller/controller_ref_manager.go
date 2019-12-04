@@ -561,6 +561,7 @@ func ownerRefControllerPatch(controller metav1.Object, controllerKind schema.Gro
 					Kind:               controllerKind.Kind,
 					Name:               controller.GetName(),
 					UID:                controller.GetUID(),
+					HashKey:            controller.GetHashKey(),
 					Controller:         &isController,
 					BlockOwnerDeletion: &blockOwnerDeletion,
 				},

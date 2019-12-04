@@ -18,6 +18,7 @@ package quobyte
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"os"
 	"path/filepath"
 	gostrings "strings"
@@ -192,7 +193,7 @@ func (plugin *quobytePlugin) newUnmounterInternal(volName string, podUID types.U
 		&quobyte{
 			volName: volName,
 			mounter: mounter,
-			pod:     &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID}},
+			pod:     &v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: podUID, HashKey: fuzzer.GetHashOfUUID(podUID)}},
 			plugin:  plugin,
 		},
 	}, nil

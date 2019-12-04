@@ -399,6 +399,8 @@ func (t *testLW) List(options metav1.ListOptions) (runtime.Object, error) {
 func (t *testLW) Watch(options metav1.ListOptions) (watch.Interface, error) {
 	return t.WatchFunc(options)
 }
+func (t *testLW) Update(options metav1.ListOptions) {
+}
 
 func TestReflectorForWatchCache(t *testing.T) {
 	store := newTestWatchCache(5)

@@ -99,6 +99,7 @@ kube::build::get_docker_wrapped_binaries() {
   local targets=(
     kube-apiserver,"${KUBE_BASE_IMAGE_REGISTRY}/debian-base-${arch}:${debian_base_version}"
     kube-controller-manager,"${KUBE_BASE_IMAGE_REGISTRY}/debian-base-${arch}:${debian_base_version}"
+    workload-controller-manager,"${KUBE_BASE_IMAGE_REGISTRY}/debian-base-${arch}:${debian_base_version}"
     kube-scheduler,"${KUBE_BASE_IMAGE_REGISTRY}/debian-base-${arch}:${debian_base_version}"
     kube-proxy,"${KUBE_BASE_IMAGE_REGISTRY}/debian-iptables-${arch}:${debian_iptables_version}"
   )

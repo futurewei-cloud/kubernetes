@@ -318,6 +318,7 @@ func extractOwnerReference(v map[string]interface{}) metav1.OwnerReference {
 		Name:               getNestedString(v, "name"),
 		APIVersion:         getNestedString(v, "apiVersion"),
 		UID:                types.UID(getNestedString(v, "uid")),
+		HashKey:            getNestedInt64(v, "hashKey"),
 		Controller:         controllerPtr,
 		BlockOwnerDeletion: blockOwnerDeletionPtr,
 	}

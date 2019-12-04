@@ -51,6 +51,7 @@ func TestEnableDynamicConfigForNode(t *testing.T) {
 				Name:      "kubelet-config-1.11",
 				Namespace: metav1.NamespaceSystem,
 				UID:       "fake-uid",
+				HashKey:   int64(0),
 			},
 		}, nil
 	})

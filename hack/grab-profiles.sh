@@ -57,6 +57,7 @@ master_binary=""
 scheduler_binary=""
 scheduler_port="10251"
 controller_manager_port="10252"
+workload_controller_manager_port="10352"
 controller_manager_binary=""
 requested_profiles=""
 mem_pprof_flags=""
@@ -76,6 +77,7 @@ HEAPSTER_PPROF_PATH="/api/v1/namespaces/kube-system/services/monitoring-heapster
 KUBELET_PPROF_PATH_PREFIX="/api/v1/proxy/nodes"
 SCHEDULER_PPROF_PATH_PREFIX="/api/v1/namespaces/kube-system/pods/kube-scheduler/proxy"
 CONTROLLER_MANAGER_PPROF_PATH_PREFIX="/api/v1/namespaces/kube-system/pods/kube-controller-manager/proxy"
+WORKLOAD_CONTROLLER_MANAGER_PPROF_PATH_PREFIX="/api/v1/namespaces/kube-system/pods/workload-controller-manager/proxy"
 
 eval set -- "${args}"
 

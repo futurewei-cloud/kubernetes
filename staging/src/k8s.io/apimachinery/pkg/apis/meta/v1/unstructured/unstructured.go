@@ -278,6 +278,22 @@ func (u *Unstructured) SetUID(uid types.UID) {
 	u.setNestedField(string(uid), "metadata", "uid")
 }
 
+func (u *Unstructured) GetHashKey() int64 {
+	val, found, err := NestedInt64(u.Object, "metadata", "hashKey")
+	if !found || err != nil {
+		return -1
+	}
+	return val
+}
+
+func (u *Unstructured) SetHashKey(hashKey int64) {
+	if hashKey == -1 {
+		RemoveNestedField(u.Object, "metadata", "hashKey")
+		return
+	}
+	u.setNestedField(hashKey, "metadata", "hashKey")
+}
+
 func (u *Unstructured) GetResourceVersion() string {
 	return getNestedString(u.Object, "metadata", "resourceVersion")
 }

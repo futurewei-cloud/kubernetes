@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"reflect"
 	"testing"
 
@@ -78,6 +79,7 @@ func TestClaimPods(t *testing.T) {
 		func() test {
 			controller := v1.ReplicationController{}
 			controller.UID = types.UID(controllerUID)
+			controller.HashKey = fuzzer.GetHashOfUUID(controller.UID)
 			now := metav1.Now()
 			controller.DeletionTimestamp = &now
 			return test{
@@ -94,6 +96,7 @@ func TestClaimPods(t *testing.T) {
 		func() test {
 			controller := v1.ReplicationController{}
 			controller.UID = types.UID(controllerUID)
+			controller.HashKey = fuzzer.GetHashOfUUID(controller.UID)
 			now := metav1.Now()
 			controller.DeletionTimestamp = &now
 			return test{
@@ -111,7 +114,9 @@ func TestClaimPods(t *testing.T) {
 			controller := v1.ReplicationController{}
 			controller2 := v1.ReplicationController{}
 			controller.UID = types.UID(controllerUID)
+			controller.HashKey = fuzzer.GetHashOfUUID(controller.UID)
 			controller2.UID = types.UID("AAAAA")
+			controller2.HashKey = int64(0)
 			return test{
 				name: "Controller can not claim pods owned by another controller",
 				manager: NewPodControllerRefManager(&FakePodControl{},
@@ -126,6 +131,7 @@ func TestClaimPods(t *testing.T) {
 		func() test {
 			controller := v1.ReplicationController{}
 			controller.UID = types.UID(controllerUID)
+			controller.HashKey = fuzzer.GetHashOfUUID(controller.UID)
 			return test{
 				name: "Controller releases claimed pods when selector doesn't match",
 				manager: NewPodControllerRefManager(&FakePodControl{},
@@ -140,6 +146,7 @@ func TestClaimPods(t *testing.T) {
 		func() test {
 			controller := v1.ReplicationController{}
 			controller.UID = types.UID(controllerUID)
+			controller.HashKey = fuzzer.GetHashOfUUID(controller.UID)
 			podToDelete1 := newPod("pod1", productionLabel, &controller)
 			podToDelete2 := newPod("pod2", productionLabel, nil)
 			now := metav1.Now()

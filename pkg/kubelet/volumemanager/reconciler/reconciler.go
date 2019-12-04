@@ -22,6 +22,7 @@ package reconciler
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	"os"
 	"path"
 	"path/filepath"
@@ -466,6 +467,7 @@ func (rc *reconciler) reconstructVolume(volume podVolume) (*reconstructedVolume,
 			UID: types.UID(volume.podName),
 		},
 	}
+	pod.HashKey = fuzzer.GetHashOfUUID(pod.UID)
 	mapperPlugin, err := rc.volumePluginMgr.FindMapperPluginByName(volume.pluginName)
 	if err != nil {
 		return nil, err

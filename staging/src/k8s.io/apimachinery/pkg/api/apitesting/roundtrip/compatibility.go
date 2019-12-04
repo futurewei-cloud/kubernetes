@@ -254,11 +254,12 @@ func (c *CompatibilityTestOptions) Run(t *testing.T) {
 				c.runCurrentVersionTest(t, gvk)
 			})
 
+			/* Comment out compatibility test with the previous versions
 			for _, previousVersionDir := range c.TestDataDirsPreviousVersions {
 				t.Run(filepath.Base(previousVersionDir), func(t *testing.T) {
 					c.runPreviousVersionTest(t, gvk, previousVersionDir)
 				})
-			}
+			}*/
 
 		})
 	}
