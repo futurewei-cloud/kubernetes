@@ -88,7 +88,7 @@ function kubelet_monitoring {
 
 ############## Main Function ################
 if [[ "$#" -ne 1 ]]; then
-  echo "Usage: health-monitor.sh <container-runtime/kubelet>"
+  echo "Usage: health-monitor.sh <container-runtime/kubelet>" >> /home/kubernetes/kubernetes-configlog.txt
   exit 1
 fi
 

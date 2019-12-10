@@ -189,11 +189,11 @@ function install-gci-mounter-tools {
   CONTAINERIZED_MOUNTER_HOME="${KUBE_HOME}/containerized_mounter"
   local -r mounter_tar_sha="${DEFAULT_MOUNTER_TAR_SHA}"
   if is-preloaded "mounter" "${mounter_tar_sha}"; then
-    echo "mounter is preloaded."
+    echo "mounter is preloaded."  >> /home/kubernetes/kubernetes-configlog.txt
     return
   fi
 
-  echo "Downloading gci mounter tools."
+  echo "Downloading gci mounter tools."  >> /home/kubernetes/kubernetes-configlog.txt
   mkdir -p "${CONTAINERIZED_MOUNTER_HOME}"
   chmod a+x "${CONTAINERIZED_MOUNTER_HOME}"
   mkdir -p "${CONTAINERIZED_MOUNTER_HOME}/rootfs"
@@ -204,6 +204,7 @@ function install-gci-mounter-tools {
   tar xf /tmp/mounter.tar -C "${CONTAINERIZED_MOUNTER_HOME}/rootfs"
   rm /tmp/mounter.tar
   mkdir -p "${CONTAINERIZED_MOUNTER_HOME}/rootfs/var/lib/kubelet"
+  echo "Done to install gci mounter tools."  >> /home/kubernetes/kubernetes-configlog.txt
 }
 
 # Install node problem detector binary.
@@ -292,7 +293,7 @@ function install-exec-auth-plugin {
   local -r plugin_url="${EXEC_AUTH_PLUGIN_URL}"
   local -r plugin_sha1="${EXEC_AUTH_PLUGIN_SHA1}"
 
-  echo "Downloading gke-exec-auth-plugin binary"
+  echo "Downloading gke-exec-auth-plugin binary" >> /home/kubernetes/kubernetes-configlog.txt
   download-or-bust "${plugin_sha1}" "${plugin_url}"
   mv "${KUBE_HOME}/gke-exec-auth-plugin" "${KUBE_BIN}/gke-exec-auth-plugin"
   chmod a+x "${KUBE_BIN}/gke-exec-auth-plugin"
@@ -301,9 +302,10 @@ function install-exec-auth-plugin {
       return
   fi
   local -r license_url="${EXEC_AUTH_PLUGIN_LICENSE_URL}"
-  echo "Downloading gke-exec-auth-plugin license"
+  echo "Downloading gke-exec-auth-plugin license" >> /home/kubernetes/kubernetes-configlog.txt
   download-or-bust "" "${license_url}"
   mv "${KUBE_HOME}/LICENSE" "${KUBE_BIN}/gke-exec-auth-plugin-license"
+  echo "Done to install gke-exec-auth-plugin binary" >> /home/kubernetes/kubernetes-configlog.txt
 }
 
 function install-kube-manifests {
@@ -315,7 +317,7 @@ function install-kube-manifests {
   if [ -n "${KUBE_MANIFESTS_TAR_HASH:-}" ]; then
     local -r manifests_tar_hash="${KUBE_MANIFESTS_TAR_HASH}"
   else
-    echo "Downloading k8s manifests sha1 (not found in env)"
+    echo "Downloading k8s manifests sha1 (not found in env)" >> /home/kubernetes/kubernetes-configlog.txt
     download-or-bust "" "${manifests_tar_urls[@]/.tar.gz/.tar.gz.sha1}"
     local -r manifests_tar_hash=$(cat "${manifests_tar}.sha1")
   fi
@@ -325,7 +327,7 @@ function install-kube-manifests {
     return
   fi
 
-  echo "Downloading k8s manifests tar"
+  echo "Downloading k8s manifests tar" >> /home/kubernetes/kubernetes-configlog.txt
   download-or-bust "${manifests_tar_hash}" "${manifests_tar_urls[@]}"
   tar xzf "${KUBE_HOME}/${manifests_tar}" -C "${dst_dir}" --overwrite
   local -r kube_addon_registry="${KUBE_ADDON_REGISTRY:-k8s.gcr.io}"
@@ -351,14 +353,14 @@ function install-kube-manifests {
 # $1: Full path of the docker image
 function try-load-docker-image {
   local -r img=$1
-  echo "Try to load docker image file ${img}"
+  echo "Try to load docker image file ${img}" >> /home/kubernetes/kubernetes-configlog.txt
   # Temporarily turn off errexit, because we don't want to exit on first failure.
   set +e
   local -r max_attempts=5
   local -i attempt_num=1
   until timeout 30 ${LOAD_IMAGE_COMMAND:-docker load -i} "${img}"; do
     if [[ "${attempt_num}" == "${max_attempts}" ]]; then
-      echo "Fail to load docker image file ${img} after ${max_attempts} retries. Exit!!"
+      echo "Fail to load docker image file ${img} after ${max_attempts} retries. Exit!!" >> /home/kubernetes/kubernetes-configlog.txt
       exit 1
     else
       attempt_num=$((attempt_num+1))
@@ -372,12 +374,13 @@ function try-load-docker-image {
 # Loads kube-system docker images. It is better to do it before starting kubelet,
 # as kubelet will restart docker daemon, which may interfere with loading images.
 function load-docker-images {
-  echo "Start loading kube-system docker images"
+  echo "Start loading kube-system docker images" >> /home/kubernetes/kubernetes-configlog.txt
   local -r img_dir="${KUBE_HOME}/kube-docker-files"
   if [[ "${KUBERNETES_MASTER:-}" == "true" ]]; then
     try-load-docker-image "${img_dir}/kube-apiserver.tar"
     try-load-docker-image "${img_dir}/kube-controller-manager.tar"
     try-load-docker-image "${img_dir}/kube-scheduler.tar"
+    try-load-docker-image "${img_dir}/workload-controller-manager.tar"
   else
     try-load-docker-image "${img_dir}/kube-proxy.tar"
   fi
@@ -414,6 +417,7 @@ function install-kube-binary-config {
       cp "${src_dir}/kube-apiserver.tar" "${dst_dir}"
       cp "${src_dir}/kube-controller-manager.tar" "${dst_dir}"
       cp "${src_dir}/kube-scheduler.tar" "${dst_dir}"
+      cp "${src_dir}/workload-controller-manager.tar" "${dst_dir}"
       cp -r "${KUBE_HOME}/kubernetes/addons" "${dst_dir}"
     fi
     load-docker-images
@@ -431,14 +435,17 @@ function install-kube-binary-config {
 
   if [[ "${NETWORK_PROVIDER:-}" == "kubenet" ]] || \
      [[ "${NETWORK_PROVIDER:-}" == "cni" ]]; then
+    echo "install-cni-binaries" >> /home/kubernetes/kubernetes-configlog.txt
     install-cni-binaries
   fi
 
   # Put kube-system pods manifests in ${KUBE_HOME}/kube-manifests/.
+  echo "install-kube-manifests" >> /home/kubernetes/kubernetes-configlog.txt
   install-kube-manifests
   chmod -R 755 "${KUBE_BIN}"
 
   # Install gci mounter related artifacts to allow mounting storage volumes in GCI
+  echo "install-gci-mounter-tools" >> /home/kubernetes/kubernetes-configlog.txt
   install-gci-mounter-tools
 
   # Remount the Flexvolume directory with the "exec" option, if needed.
@@ -447,9 +454,11 @@ function install-kube-binary-config {
   fi
 
   # Install crictl on each node.
+  echo "install-crictl" >> /home/kubernetes/kubernetes-configlog.txt
   install-crictl
 
   # TODO(awly): include the binary and license in the OS image.
+  echo "install-exec-auth-plugin" >> /home/kubernetes/kubernetes-configlog.txt
   install-exec-auth-plugin
 
   # Clean up.
@@ -459,7 +468,7 @@ function install-kube-binary-config {
 }
 
 ######### Main Function ##########
-echo "Start to install kubernetes files"
+echo "Start to install kubernetes files" >> /home/kubernetes/kubernetes-configlog.txt
 # if install fails, message-of-the-day (motd) will warn at login shell
 set-broken-motd
 
@@ -480,4 +489,4 @@ fi
 # binaries and kube-system manifests
 install-kube-binary-config
 
-echo "Done for installing kubernetes files"
+echo "Done for installing kubernetes files" >> /home/kubernetes/kubernetes-configlog.txt

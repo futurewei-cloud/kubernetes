@@ -636,6 +636,9 @@ function create-master-auth {
   if [[ -n "${KUBE_CONTROLLER_MANAGER_TOKEN:-}" ]]; then
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_CONTROLLER_MANAGER_TOKEN}," "system:kube-controller-manager,uid:system:kube-controller-manager"
   fi
+  if [[ -n "${WORKLOAD_CONTROLLER_MANAGER_TOKEN:-}" ]]; then
+    append_or_replace_prefixed_line "${known_tokens_csv}" "${WORKLOAD_CONTROLLER_MANAGER_TOKEN}," "system:workload-controller-manager,uid:system:workload-controller-manager"
+  fi  
   if [[ -n "${KUBE_SCHEDULER_TOKEN:-}" ]]; then
     append_or_replace_prefixed_line "${known_tokens_csv}" "${KUBE_SCHEDULER_TOKEN},"          "system:kube-scheduler,uid:system:kube-scheduler"
   fi
@@ -989,6 +992,7 @@ rules:
   - level: None
     users:
       - system:kube-controller-manager
+      - system:workload-controller-manager
       - system:kube-scheduler
       - system:serviceaccount:kube-system:endpoint-controller
     verbs: ["get", "update"]
@@ -1013,6 +1017,7 @@ rules:
   - level: None
     users:
       - system:kube-controller-manager
+      - system:workload-controller-manager
     verbs: ["get", "list"]
     resources:
       - group: "metrics.k8s.io"
@@ -1135,15 +1140,83 @@ current-context: ${component}
 EOF
 }
 
+function create-workloadcontrollerconfig {
+  local component=$1
+  local node_workers_num=$2
+  local replicaset_workers_num=$3
+  echo "Creating workloadcontrollerconfi file for component ${component}" >> /home/kubernetes/kubernetes-configlog.txt
+  mkdir -p /etc/srv/kubernetes/${component}
+  cat <<EOF >/etc/srv/kubernetes/${component}/controllerconfig.json
+{
+    "controllers": [
+        {
+            "type":    "node",
+            "workers":     ${node_workers_num}
+        },
+        {
+            "type":    "replicaset",
+            "workers":    ${replicaset_workers_num}
+        }
+    ]
+}
+EOF
+}
+
+function create-workloadcontrollerroles {
+  echo "Applying workload controller manager cluster roles and role bindings now!" >> /home/kubernetes/kubernetes-configlog.txt
+  mkdir -p /etc/srv/kubernetes/workload-controller-manager
+  cat <<EOF >/etc/srv/kubernetes/workload-controller-manager/workload-controller-manager-clusterrole.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kube-system
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  creationTimestamp: null
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:workload-controller-manager
+rules:
+- apiGroups: ["", "apps"]
+  resources: ["controllerinstances","events",  "replicasets", "replicasets/status", "pods"]
+  verbs: ["*"]
+EOF
+  echo "kubectl create clusterrole" >> /home/kubernetes/kubernetes-configlog.txt
+  kubectl create -f /etc/srv/kubernetes/workload-controller-manager/workload-controller-manager-clusterrole.yaml
+
+  cat <<EOF >/etc/srv/kubernetes/workload-controller-manager/workload-controller-manager-clusterrolebinding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  creationTimestamp: null
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:workload-controller-manager
+  namespace: kube-system
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:workload-controller-manager
+roleRef:
+  kind: ClusterRole
+  name: system:workload-controller-manager
+  apiGroup: rbac.authorization.k8s.io
+EOF
+  echo "kubectl create clusterrolebinding" >> /home/kubernetes/kubernetes-configlog.txt
+  kubectl create -f /etc/srv/kubernetes/workload-controller-manager/workload-controller-manager-clusterrolebinding.yaml
+}
+
 # Arg 1: the IP address of the API server
 function create-kubelet-kubeconfig() {
   local apiserver_address="${1}"
   if [[ -z "${apiserver_address}" ]]; then
-    echo "Must provide API server address to create Kubelet kubeconfig file!"
+    echo "Must provide API server address to create Kubelet kubeconfig file!" >> /home/kubernetes/kubernetes-configlog.txt
     exit 1
   fi
   if [[ "${CREATE_BOOTSTRAP_KUBECONFIG:-true}" == "true" ]]; then
-    echo "Creating kubelet bootstrap-kubeconfig file"
+    echo "Creating kubelet bootstrap-kubeconfig file" >> /home/kubernetes/kubernetes-configlog.txt
     cat <<EOF >/var/lib/kubelet/bootstrap-kubeconfig
 apiVersion: v1
 kind: Config
@@ -1165,10 +1238,10 @@ contexts:
 current-context: service-account-context
 EOF
   elif [[ "${FETCH_BOOTSTRAP_KUBECONFIG:-false}" == "true" ]]; then
-    echo "Fetching kubelet bootstrap-kubeconfig file from metadata"
+    echo "Fetching kubelet bootstrap-kubeconfig file from metadata" >> /home/kubernetes/kubernetes-configlog.txt
     get-metadata-value "instance/attributes/bootstrap-kubeconfig" >/var/lib/kubelet/bootstrap-kubeconfig
   else
-    echo "Fetching kubelet kubeconfig file from metadata"
+    echo "Fetching kubelet kubeconfig file from metadata" >> /home/kubernetes/kubernetes-configlog.txt
     get-metadata-value "instance/attributes/kubeconfig" >/var/lib/kubelet/kubeconfig
   fi
 }
@@ -1336,7 +1409,7 @@ EOF
 # This function assembles the kubelet systemd service file and starts it
 # using systemctl.
 function start-kubelet {
-  echo "Start kubelet"
+  echo "Start kubelet" >> /home/kubernetes/kubernetes-configlog.txt
 
   # TODO(#60123): The kubelet should create the cert-dir directory if it doesn't exist
   mkdir -p /var/lib/kubelet/pki/
@@ -1356,12 +1429,12 @@ function start-kubelet {
       fi
     fi
   fi
-  echo "Using kubelet binary at ${kubelet_bin}"
+  echo "Using kubelet binary at ${kubelet_bin}" >> /home/kubernetes/kubernetes-configlog.txt
 
   local -r kubelet_env_file="/etc/default/kubelet"
   local kubelet_opts="${KUBELET_ARGS} ${KUBELET_CONFIG_FILE_ARG:-}"
-  echo "KUBELET_OPTS=\"${kubelet_opts}\"" > "${kubelet_env_file}"
-  echo "KUBE_COVERAGE_FILE=\"/var/log/kubelet.cov\"" >> "${kubelet_env_file}"
+  echo "KUBELET_OPTS=\"${kubelet_opts}\"" > "${kubelet_env_file}" 
+  echo "KUBE_COVERAGE_FILE=\"/var/log/kubelet.cov\"" >> "${kubelet_env_file}" 
 
   # Write the systemd service file for kubelet.
   cat <<EOF >/etc/systemd/system/kubelet.service
@@ -1387,9 +1460,9 @@ EOF
 # This function assembles the node problem detector systemd service file and
 # starts it using systemctl.
 function start-node-problem-detector {
-  echo "Start node problem detector"
+  echo "Start node problem detector" >> /home/kubernetes/kubernetes-configlog.txt
   local -r npd_bin="${KUBE_HOME}/bin/node-problem-detector"
-  echo "Using node problem detector binary at ${npd_bin}"
+  echo "Using node problem detector binary at ${npd_bin}" >> /home/kubernetes/kubernetes-configlog.txt
 
   local flags="${NODE_PROBLEM_DETECTOR_CUSTOM_FLAGS:-}"
   if [[ -z "${flags}" ]]; then
@@ -1737,7 +1810,7 @@ function prepare-mounter-rootfs {
 #   DOCKER_REGISTRY
 #   INSECURE_PORT_MAPPING
 function start-kube-apiserver {
-  echo "Start kubernetes api-server"
+  echo "Start kubernetes api-server" >> /home/kubernetes/kubernetes-configlog.txt
   prepare-log-file "${KUBE_API_SERVER_LOG_PATH:-/var/log/kube-apiserver.log}"
   prepare-log-file "${KUBE_API_SERVER_AUDIT_LOG_PATH:-/var/log/kube-apiserver-audit.log}"
 
@@ -2047,6 +2120,7 @@ function start-kube-apiserver {
 
   # params is passed by reference, so no "$"
   setup-etcd-encryption "${src_file}" params
+  echo "${params}" >> /home/kubernetes/kubernetes-configlog.txt
 
   # Evaluate variables.
   local -r kube_apiserver_docker_tag="${KUBE_API_SERVER_DOCKER_TAG:-$(cat /home/kubernetes/kube-docker-files/kube-apiserver.docker_tag)}"
@@ -2193,7 +2267,7 @@ function update-node-label() {
 #   CLOUD_CONFIG_MOUNT
 #   DOCKER_REGISTRY
 function start-kube-controller-manager {
-  echo "Start kubernetes controller-manager"
+  echo "Start kubernetes controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
   create-kubeconfig "kube-controller-manager" ${KUBE_CONTROLLER_MANAGER_TOKEN}
   prepare-log-file /var/log/kube-controller-manager.log
   # Calculate variables and assemble the command line.
@@ -2280,6 +2354,58 @@ function start-kube-controller-manager {
   sed -i -e "s@{{cpurequest}}@${KUBE_CONTROLLER_MANAGER_CPU_REQUEST}@g" "${src_file}"
 
   cp "${src_file}" /etc/kubernetes/manifests
+}
+
+# Starts workload controller manager.
+# It prepares the log file, loads the docker image, calculates variables, sets them
+# in the manifest file, and then copies the manifest file to /etc/kubernetes/manifests.
+#
+# Assumed vars (which are calculated in function compute-master-manifest-variables)
+#   CLOUD_CONFIG_OPT
+#   CLOUD_CONFIG_VOLUME
+#   CLOUD_CONFIG_MOUNT
+#   DOCKER_REGISTRY
+function start-workload-controller-manager {
+  echo "Start workload controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
+  create-kubeconfig "workload-controller-manager" ${WORKLOAD_CONTROLLER_MANAGER_TOKEN}
+  echo "done to create kube config" >> /home/kubernetes/kubernetes-configlog.txt
+  create-workloadcontrollerconfig "workload-controller-manager" ${NODE_WORKERS_NUM} ${REPLICASET_WORKERS_NUM}
+  echo "done to create workloadcontrollerconfig" >> /home/kubernetes/kubernetes-configlog.txt
+  prepare-log-file /var/log/workload-controller-manager.log
+  # Calculate variables and assemble the command line.
+  local params="${WORKLOAD_CONTROLLER_MANAGER_TEST_LOG_LEVEL:-"--v=2"}"
+  params+=" --controllerconfig=/etc/srv/kubernetes/workload-controller-manager/controllerconfig.json"
+  params+=" --kubeconfig=/etc/srv/kubernetes/workload-controller-manager/kubeconfig"
+  
+  echo "${params}" >> /home/kubernetes/kubernetes-configlog.txt
+  # Disable using HPA metrics REST clients if metrics-server isn't enabled,
+  # or if we want to explicitly disable it by setting HPA_USE_REST_CLIENT.
+
+  local -r kube_rc_docker_tag=$(cat /home/kubernetes/kube-docker-files/workload-controller-manager.docker_tag)
+  echo "${kube_rc_docker_tag}" >> /home/kubernetes/kubernetes-configlog.txt
+  local container_env=""
+  if [[ -n "${ENABLE_CACHE_MUTATION_DETECTOR:-}" ]]; then
+    container_env="\"env\":[{\"name\": \"KUBE_CACHE_MUTATION_DETECTOR\", \"value\": \"${ENABLE_CACHE_MUTATION_DETECTOR}\"}],"
+  fi
+
+  local -r src_file="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/workload-controller-manager.manifest"
+  # Evaluate variables.
+  sed -i -e "s@{{pillar\['kube_docker_registry'\]}}@${DOCKER_REGISTRY}@g" "${src_file}"
+  sed -i -e "s@{{pillar\['workload-controller-manager_docker_tag'\]}}@${kube_rc_docker_tag}@g" "${src_file}"
+  sed -i -e "s@{{params}}@${params}@g" "${src_file}"
+  sed -i -e "s@{{container_env}}@${container_env}@g" ${src_file}
+  sed -i -e "s@{{cloud_config_mount}}@${CLOUD_CONFIG_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{cloud_config_volume}}@${CLOUD_CONFIG_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{additional_cloud_config_mount}}@@g" "${src_file}"
+  sed -i -e "s@{{additional_cloud_config_volume}}@@g" "${src_file}"
+  sed -i -e "s@{{pv_recycler_mount}}@${PV_RECYCLER_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{pv_recycler_volume}}@${PV_RECYCLER_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{flexvolume_hostpath_mount}}@${FLEXVOLUME_HOSTPATH_MOUNT}@g" "${src_file}"
+  sed -i -e "s@{{flexvolume_hostpath}}@${FLEXVOLUME_HOSTPATH_VOLUME}@g" "${src_file}"
+  sed -i -e "s@{{cpurequest}}@${WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST}@g" "${src_file}"
+
+  cp "${src_file}" /etc/kubernetes/manifests
+  echo "Done to start workload controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
 }
 
 # Starts kubernetes scheduler.
@@ -2672,7 +2798,7 @@ EOF
 # Vars assumed:
 #   CLUSTER_NAME
 function start-kube-addons {
-  echo "Prepare kube-addons manifests and start kube addon manager"
+  echo "Prepare kube-addons manifests and start kube addon manager" 
   local -r src_dir="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty"
   local -r dst_dir="/etc/kubernetes/addons"
 
@@ -2941,7 +3067,7 @@ function start-lb-controller {
 
 # Setup working directory for kubelet.
 function setup-kubelet-dir {
-    echo "Making /var/lib/kubelet executable for kubelet"
+    echo "Making /var/lib/kubelet executable for kubelet" >> /home/kubernetes/kubernetes-configlog.txt
     mount -B /var/lib/kubelet /var/lib/kubelet/
     mount -B -o remount,exec,suid,dev /var/lib/kubelet
 }
@@ -3125,7 +3251,7 @@ EOF
 
 ########### Main Function ###########
 function main() {
-  echo "Start to configure instance for kubernetes"
+  echo "Start to configure instance for kubernetes" >> /home/kubernetes/kubernetes-configlog.txt
 
   readonly UUID_MNT_PREFIX="/mnt/disks/by-uuid/google-local-ssds"
   readonly UUID_BLOCK_PREFIX="/dev/disk/by-uuid/google-local-ssds"
@@ -3134,7 +3260,12 @@ function main() {
 
   # Resource requests of master components.
   KUBE_CONTROLLER_MANAGER_CPU_REQUEST="${KUBE_CONTROLLER_MANAGER_CPU_REQUEST:-200m}"
+  WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST="${WORKLOAD_CONTROLLER_MANAGER_CPU_REQUEST:-200m}"
   KUBE_SCHEDULER_CPU_REQUEST="${KUBE_SCHEDULER_CPU_REQUEST:-75m}"
+
+    #workload controller manager config param
+  NODE_WORKERS_NUM="${NODE_WORKERS_NUM:-5}"
+  REPLICASET_WORKERS_NUM="${REPLICASET_WORKERS_NUM:-10}"
 
   # Use --retry-connrefused opt only if it's supported by curl.
   CURL_RETRY_CONNREFUSED=""
@@ -3147,7 +3278,7 @@ function main() {
   PV_RECYCLER_OVERRIDE_TEMPLATE="${KUBE_HOME}/kube-manifests/kubernetes/pv-recycler-template.yaml"
 
   if [[ ! -e "${KUBE_HOME}/kube-env" ]]; then
-    echo "The ${KUBE_HOME}/kube-env file does not exist!! Terminate cluster initialization."
+    echo "The ${KUBE_HOME}/kube-env file does not exist!! Terminate cluster initialization." >> /home/kubernetes/kubernetes-configlog.txt
     exit 1
   fi
 
@@ -3155,7 +3286,7 @@ function main() {
 
 
   if [[ -f "${KUBE_HOME}/kubelet-config.yaml" ]]; then
-    echo "Found Kubelet config file at ${KUBE_HOME}/kubelet-config.yaml"
+    echo "Found Kubelet config file at ${KUBE_HOME}/kubelet-config.yaml" >> /home/kubernetes/kubernetes-configlog.txt
     KUBELET_CONFIG_FILE_ARG="--config ${KUBE_HOME}/kubelet-config.yaml"
   fi
 
@@ -3171,6 +3302,7 @@ function main() {
   fi
 
   KUBE_CONTROLLER_MANAGER_TOKEN="$(secure_random 32)"
+  WORKLOAD_CONTROLLER_MANAGER_TOKEN="$(secure_random 32)"
   KUBE_SCHEDULER_TOKEN="$(secure_random 32)"
   KUBE_CLUSTER_AUTOSCALER_TOKEN="$(secure_random 32)"
   if [[ "${ENABLE_L7_LOADBALANCING:-}" == "glbc" ]]; then
@@ -3180,7 +3312,7 @@ function main() {
   if [[ "${ENABLE_APISERVER_INSECURE_PORT:-false}" != "true" ]]; then
     KUBE_BOOTSTRAP_TOKEN="$(secure_random 32)"
   fi
-
+  echo "setup-os-params" >> /home/kubernetes/kubernetes-configlog.txt
   setup-os-params
   config-ip-firewall
   create-dirs
@@ -3220,6 +3352,7 @@ function main() {
   elif [[ "${container_runtime}" == "containerd" ]]; then
     setup-containerd
   fi
+  echo "start-kubelet" >> /home/kubernetes/kubernetes-configlog.txt
   start-kubelet
 
   if [[ "${KUBERNETES_MASTER:-}" == "true" ]]; then
@@ -3232,13 +3365,21 @@ function main() {
     if [[ "${ENABLE_EGRESS_VIA_KONNECTIVITY_SERVICE:-false}" == "true" ]]; then
       start-konnectivity-server
     fi
+    echo "start-kube-controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
     start-kube-controller-manager
+    echo "start-kube-scheduler" >> /home/kubernetes/kubernetes-configlog.txt
     start-kube-scheduler
     wait-till-apiserver-ready
+    echo "start-kube-addons" >> /home/kubernetes/kubernetes-configlog.txt
     start-kube-addons
     start-cluster-autoscaler
     start-lb-controller
     update-legacy-addon-node-labels &
+    echo "create-workloadcontrollerroles" >> /home/kubernetes/kubernetes-configlog.txt
+    create-workloadcontrollerroles
+    echo "start-workload-controller-manager" >> /home/kubernetes/kubernetes-configlog.txt
+    start-workload-controller-manager
+
   else
     if [[ "${KUBE_PROXY_DAEMONSET:-}" != "true" ]]; then
       start-kube-proxy
@@ -3249,8 +3390,8 @@ function main() {
   fi
   reset-motd
   prepare-mounter-rootfs
-  modprobe configs
-  echo "Done for the configuration for kubernetes"
+  modprobe configs 
+  echo "Done for the configuration for kubernetes" >> /home/kubernetes/kubernetes-configlog.txt
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
